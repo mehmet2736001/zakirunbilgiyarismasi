@@ -1,0 +1,20 @@
+{
+  "name": "Zakirun Hâfızlık Yarışmaları",
+  "short_name": "Zakirun",
+  "description": "Mobil oyun formatında, maksimum 100 motivasyon puanlı, aralıklı tekrarlı ve canlı turnuvalı Kur'an-ı Kerim hâfızlık yarışması.",
+  "start_url": "/kuran_tv_bilgi_yarismasi.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#030c08",
+  "theme_color": "#062319",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='128' fill='%23062319'/%3E%3Cpath d='M256 64 L384 192 L320 192 L320 384 L192 384 L192 192 L128 192 Z' fill='%23f59e0b'/%3E%3Ccircle cx='256' cy='256' r='64' fill='%2310b981'/%3E%3Ctext x='256' y='280' font-size='72' font-family='sans-serif' font-weight='bold' text-anchor='middle' fill='%23ffffff'%3EZ%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "games"],
+  "lang": "tr"
+}

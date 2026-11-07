@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kur'an Bilgi Yarışması // Zakirun Kur'an Oyunları</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        studio: {
+                            950: '#030712',
+                            900: '#0b0f19',
+                            800: '#111827',
+                            gold: '#fbbf24',
+                            amber: '#f59e0b',
+                            crimson: '#ef4444',
+                            emerald: '#10b981',
+                            cyan: '#06b6d4',
+                            violet: '#8b5cf6'
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        amiri: ['ZakirunUthmani', 'Amiri', 'serif'],
+                        inter: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600;700;900&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @font-face {
+            font-family: 'ZakirunUthmani';
+            src: url('/zakirun.com.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        body {
+            background: radial-gradient(circle at 50% 10%, #1e1b4b 0%, #090d16 55%, #030712 100%);
+            color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+        .quran-font {
+            font-family: 'ZakirunUthmani', 'Amiri', serif;
+            direction: rtl;
+            line-height: 2.2;
+            letter-spacing: 0.5px;
+        }
+        .option-btn {
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            background: rgba(15, 23, 42, 0.85);
+            transition: all 0.2s ease;
+        }
+        .option-btn:hover:not(:disabled) {
+            border-color: #f59e0b;
+            background: rgba(30, 41, 59, 0.95);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px -5px rgba(245, 158, 11, 0.3);
+        }
+        .option-btn.correct {
+            border-color: #10b981 !important;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.4) 0%, rgba(5, 150, 105, 0.6) 100%) !important;
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.6);
+        }
+        .option-btn.wrong {
+            border-color: #ef4444 !important;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.4) 0%, rgba(185, 28, 28, 0.6) 100%) !important;
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.6);
+        }
+        .ladder-step {
+            transition: all 0.2s ease;
+        }
+        .ladder-step.active {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #000000;
+            font-weight: 900;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.6);
+        }
+        .ladder-step.checkpoint {
+            border-left: 3px solid #10b981;
+        }
+    </style>
+</head>
+<body class="selection:bg-amber-500 selection:text-black flex flex-col min-h-screen">
+
+    <!-- TOP BAR -->
+    <header class="border-b border-white/5 bg-studio-950/80 backdrop-blur-md sticky top-0 z-50 px-4 py-3">
+        <div class="max-w-5xl mx-auto flex items-center justify-between gap-3">
+            <a href="/" class="px-3.5 py-1.5 rounded-xl bg-studio-900 border border-gray-700 hover:border-amber-500 text-gray-300 hover:text-white transition flex items-center gap-2 text-xs font-bold">
+                <span>←</span>
+                <span>Ana Sayfa</span>
+            </a>
+
+            <div class="text-xs sm:text-sm font-black text-amber-400 font-mono tracking-wider">
+                👑 KUR'AN BİLGİ YARIŞMASI
+            </div>
+
+            <div class="flex items-center space-x-2 text-xs">
+                <div class="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono font-black" id="mil-hud-score">
+                    0 / 100 Puan
+                </div>
+                <button onclick="toggleAudio()" id="sfxBtn" class="px-2.5 py-1.5 rounded-xl bg-studio-900 border border-gray-700 hover:border-amber-500 text-gray-300 text-xs">
+                    <span id="sfxIcon">🔊</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- OYUN ALANI -->
+    <main class="max-w-4xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
+
+        <!-- 3 Joker ve Basamak Çubuğu -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-studio-900/80 border border-white/5 rounded-2xl p-4">
+            <!-- 3 Joker -->
+            <div class="flex items-center gap-2">
+                <button onclick="useJoker50()" id="joker-50" class="px-3.5 py-1.5 rounded-xl bg-studio-800 border border-amber-500/30 text-amber-300 hover:border-amber-400 text-xs font-bold transition flex items-center gap-1.5">
+                    <span>✂️</span>
+                    <span>%50 Joker</span>
+                </button>
+                <button onclick="useJokerAudience()" id="joker-aud" class="px-3.5 py-1.5 rounded-xl bg-studio-800 border border-cyan-500/30 text-cyan-300 hover:border-cyan-400 text-xs font-bold transition flex items-center gap-1.5">
+                    <span>👥</span>
+                    <span>Seyirci</span>
+                </button>
+                <button onclick="useJokerPass()" id="joker-pass" class="px-3.5 py-1.5 rounded-xl bg-studio-800 border border-purple-500/30 text-purple-300 hover:border-purple-400 text-xs font-bold transition flex items-center gap-1.5">
+                    <span>🔄</span>
+                    <span>Pas Geç</span>
+                </button>
+            </div>
+
+            <!-- Aktif Soru & Baraj Bilgisi -->
+            <div class="flex items-center gap-2 text-xs font-mono">
+                <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold" id="mil-checkpoint-info">
+                    🛡️ 1. Baraj: 25 Puan
+                </span>
+                <span class="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-300 font-bold" id="mil-current-step">
+                    Basamak: 1 / 11
+                </span>
+            </div>
+        </div>
+
+        <!-- Soru Kartı -->
+        <div class="bg-studio-900/90 border border-amber-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-white/5 pb-3">
+                <span class="px-3 py-1 rounded-lg bg-amber-500/15 text-amber-300 font-mono text-xs font-bold" id="mil-step-title">
+                    1. Basamak &bull; 5 Motivasyon Puanı
+                </span>
+                <span class="text-xs text-gray-400 font-mono" id="mil-timer">60 sn</span>
+            </div>
+
+            <!-- Arapça Metin (Varsa) -->
+            <div class="quran-font text-2xl sm:text-3xl text-amber-200 text-center py-2" id="mil-ayah-arabic">
+                بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحٖيمِ
+            </div>
+
+            <!-- Soru Metni -->
+            <div class="text-base sm:text-lg font-bold text-white text-center sm:text-left leading-relaxed" id="mil-prompt-text">
+                Kur'an-ı Kerim'in 'Fâtiha' sûresinin ilk âyeti hangisidir?
+            </div>
+        </div>
+
+        <!-- 4 Şık Butonu Grid'i -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="mil-options-grid">
+            <button onclick="chooseOption(0)" id="opt-0" class="option-btn p-4 rounded-2xl flex items-center gap-3 text-left">
+                <span class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 font-black flex items-center justify-center text-xs">A</span>
+                <span class="text-sm font-bold text-white flex-1" id="opt-text-0">Seçenek A</span>
+            </button>
+            <button onclick="chooseOption(1)" id="opt-1" class="option-btn p-4 rounded-2xl flex items-center gap-3 text-left">
+                <span class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 font-black flex items-center justify-center text-xs">B</span>
+                <span class="text-sm font-bold text-white flex-1" id="opt-text-1">Seçenek B</span>
+            </button>
+            <button onclick="chooseOption(2)" id="opt-2" class="option-btn p-4 rounded-2xl flex items-center gap-3 text-left">
+                <span class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 font-black flex items-center justify-center text-xs">C</span>
+                <span class="text-sm font-bold text-white flex-1" id="opt-text-2">Seçenek C</span>
+            </button>
+            <button onclick="chooseOption(3)" id="opt-3" class="option-btn p-4 rounded-2xl flex items-center gap-3 text-left">
+                <span class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 font-black flex items-center justify-center text-xs">D</span>
+                <span class="text-sm font-bold text-white flex-1" id="opt-text-3">Seçenek D</span>
+            </button>
+        </div>
+
+        <!-- Doğru Bilindiğinde Açılan Tilâvet & İlerleme Kartı -->
+        <div id="mil-complete-box" class="hidden bg-gradient-to-b from-studio-900 to-studio-950 border-2 border-emerald-500/40 rounded-3xl p-6 text-center space-y-4 shadow-2xl">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold">
+                <span>✓</span>
+                <span>TEBRİKLER! DOĞRU CEVAP</span>
+            </div>
+            <div class="text-sm sm:text-base text-gray-300 italic" id="mil-translation-text">
+                "Rahmân ve Rahîm olan Allah'ın adıyla."
+            </div>
+            <div class="pt-2 flex items-center justify-center gap-3">
+                <button onclick="playMilAudio()" id="mil-audio-btn" class="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg flex items-center gap-2 transition">
+                    <span>🎧</span>
+                    <span>Tilâveti Dinle</span>
+                </button>
+                <button onclick="nextMilQuestion()" class="px-5 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs shadow-lg flex items-center gap-2 transition">
+                    <span>Sıradaki Basamağa Geç</span>
+                    <span>→</span>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <audio id="quranAudioPlayer" preload="none"></audio>
+
+    <script>
+        let milQuestions = [];
+        let currentMilIndex = 0;
+        let milScore = 0;
+        let isMilAnswered = false;
+
+        let joker50Used = false;
+        let jokerAudUsed = false;
+        let jokerPassUsed = false;
+
+        // Ses Efektleri
+        let sfxEnabled = localStorage.getItem('zakirun_sfx') !== '0';
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) audioCtx = new AudioCtx();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            return audioCtx;
+        }
+
+        function playTone(freq, type = 'sine', duration = 0.1, gainVal = 0.15) {
+            if (!sfxEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playCorrectSound() {
+            playTone(523.25, 'triangle', 0.12, 0.2);
+            setTimeout(() => playTone(659.25, 'triangle', 0.15, 0.2), 100);
+            setTimeout(() => playTone(783.99, 'triangle', 0.25, 0.2), 220);
+            if (typeof confetti === 'function') confetti({ particleCount: 40, spread: 60, origin: { y: 0.7 } });
+        }
+
+                function recordMistake(data) {
+            try {
+                const mistakes = JSON.parse(localStorage.getItem('zakirun_mistakes_log') || '[]');
+                const entry = {
+                    id: 'mstk-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+                    player_name: 'Siz (Yarışmacı)',
+                    game_name: data.game_name || "Kur'an Kelime Oyunu",
+                    game_id: data.game_id || 'kelime_oyunu',
+                    surah_id: data.surah_id || 0,
+                    sure_name: data.sure_name || 'Kelime Oyunu',
+                    ayah_id: data.ayah_id || 0,
+                    reference: data.reference || 'Kelime Oyunu',
+                    question_type: data.question_type || 'Kelime Tahmini',
+                    target_text: data.target_text || '',
+                    selected_wrong_text: data.selected_wrong_text || '',
+                    full_ayah_text: data.full_ayah_text || '',
+                    timestamp: Date.now(),
+                    date_str: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+                };
+                mistakes.unshift(entry);
+                localStorage.setItem('zakirun_mistakes_log', JSON.stringify(mistakes));
+                fetch('/api/gameshow/mistakes/record', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(entry)
+                }).catch(() => {});
+            } catch(e) {}
+        }
+
+        function playWrongSound() {
+            playTone(280, 'sawtooth', 0.15, 0.2);
+            setTimeout(() => playTone(220, 'sawtooth', 0.25, 0.2), 120);
+        }
+
+        function toggleAudio() {
+            sfxEnabled = !sfxEnabled;
+            localStorage.setItem('zakirun_sfx', sfxEnabled ? '1' : '0');
+            document.getElementById('sfxIcon').innerText = sfxEnabled ? '🔊' : '🔇';
+        }
+
+        async function initMilGame() {
+            document.getElementById('sfxIcon').innerText = sfxEnabled ? '🔊' : '🔇';
+            try {
+                const res = await fetch('/api/gameshow/ladder?surah_group=juz30&reciter_id=12');
+                if (res.ok) {
+                    const data = await res.json();
+                    milQuestions = data.ladder;
+                }
+            } catch (e) {
+                console.warn('API fetch error, fallback');
+            }
+            if (!milQuestions || milQuestions.length === 0) {
+                milQuestions = getFallbackQuestions();
+            }
+            currentMilIndex = 0;
+            milScore = 0;
+            presentMilQuestion();
+        }
+
+        function presentMilQuestion() {
+            if (currentMilIndex >= milQuestions.length) {
+                alert(`🏆 100 TAM PUAN ZİRVESİNE ULAŞTINIZ!\nMâşâallâh! 11 Basamağın tümünü başarıyla tamamladınız.`);
+                window.location.href = '/';
+                return;
+            }
+
+            isMilAnswered = false;
+            const q = milQuestions[currentMilIndex];
+
+            document.getElementById('mil-step-title').innerText = `${q.level}. Basamak &bull; ${q.title}`;
+            document.getElementById('mil-current-step').innerText = `Basamak: ${currentMilIndex + 1} / ${milQuestions.length}`;
+            document.getElementById('mil-hud-score').innerText = `${milScore} / 100 Puan`;
+            document.getElementById('mil-ayah-arabic').innerText = q.ayah_arabic || '';
+            document.getElementById('mil-prompt-text').innerText = q.prompt;
+
+            document.getElementById('mil-complete-box').classList.add('hidden');
+
+            // Baraj bilgisi
+            if (currentMilIndex < 3) {
+                document.getElementById('mil-checkpoint-info').innerText = '🛡️ 1. Baraj: 4. Soru (25 Puan)';
+            } else if (currentMilIndex < 6) {
+                document.getElementById('mil-checkpoint-info').innerText = '🛡️ 2. Baraj: 7. Soru (65 Puan)';
+            } else {
+                document.getElementById('mil-checkpoint-info').innerText = '🌟 Zirve Hedefi: 100 Puan';
+            }
+
+            // Seçenekleri temizle ve ata
+            for (let i = 0; i < 4; i++) {
+                const btn = document.getElementById(`opt-${i}`);
+                const textEl = document.getElementById(`opt-text-${i}`);
+                btn.className = 'option-btn p-4 rounded-2xl flex items-center gap-3 text-left';
+                btn.disabled = false;
+                textEl.innerText = q.options[i] || '';
+            }
+        }
+
+        function chooseOption(idx) {
+            if (isMilAnswered) return;
+            isMilAnswered = true;
+
+            const q = milQuestions[currentMilIndex];
+            const btn = document.getElementById(`opt-${idx}`);
+
+            if (idx === q.correct_index) {
+                btn.classList.add('correct');
+                playCorrectSound();
+                milScore = parseInt(q.points) || milScore;
+                document.getElementById('mil-hud-score').innerText = `${milScore} / 100 Puan`;
+
+                document.getElementById('mil-translation-text').innerText = `"${q.translation}"`;
+                document.getElementById('mil-complete-box').classList.remove('hidden');
+
+                const player = document.getElementById('quranAudioPlayer');
+                if (player && q.audio_url) player.src = q.audio_url;
+
+            } else {
+                btn.classList.add('wrong');
+                playWrongSound();
+                const correctBtn = document.getElementById(`opt-${q.correct_index}`);
+                if (correctBtn) correctBtn.classList.add('correct');
+
+                recordMistake({
+                    game_name: "Bilgi Yarışması & Merdiven",
+                    game_id: "bilgi_yarismasi",
+                    surah_id: q.surah_id || 0,
+                    sure_name: q.sure_name || "Bilgi Yarışması",
+                    ayah_id: q.ayah_id || 0,
+                    reference: q.ayah_ref || `Basamak #${currentMilIndex + 1} (${q.points || 0} P)`,
+                    question_type: "Merdiven Sorusu",
+                    target_text: q.options && q.options[q.correct_index] ? (typeof q.options[q.correct_index] === "object" ? q.options[q.correct_index].text : q.options[q.correct_index]) : "",
+                    selected_wrong_text: q.options && q.options[idx] ? (typeof q.options[idx] === "object" ? q.options[idx].text : q.options[idx]) : "",
+                    full_ayah_text: q.question_text || q.translation || ""
+                });
+
+                setTimeout(() => {
+                    let fallbackScore = 0;
+                    if (currentMilIndex >= 6) fallbackScore = 65;
+                    else if (currentMilIndex >= 3) fallbackScore = 25;
+                    alert(`Yanlış cevap! Kazandığınız baraj puanı: ${fallbackScore} Puan.`);
+                    window.location.href = '/';
+                }, 1400);
+            }
+        }
+
+        function playMilAudio() {
+            const player = document.getElementById('quranAudioPlayer');
+            const btn = document.getElementById('mil-audio-btn');
+            if (!player || !player.src) return;
+            if (player.paused) {
+                player.play().then(() => {
+                    btn.innerHTML = `<span>⏸</span><span>Durdur</span>`;
+                });
+            } else {
+                player.pause();
+                btn.innerHTML = `<span>🎧</span><span>Tilâveti Dinle</span>`;
+            }
+        }
+
+        function nextMilQuestion() {
+            const player = document.getElementById('quranAudioPlayer');
+            if (player) player.pause();
+            currentMilIndex++;
+            presentMilQuestion();
+        }
+
+        function useJoker50() {
+            if (joker50Used || isMilAnswered) return;
+            joker50Used = true;
+            document.getElementById('joker-50').disabled = true;
+            document.getElementById('joker-50').classList.add('opacity-40');
+
+            const q = milQuestions[currentMilIndex];
+            const toEliminate = q.joker_50_eliminated || [1, 2];
+            toEliminate.forEach(idx => {
+                const btn = document.getElementById(`opt-${idx}`);
+                if (btn && idx !== q.correct_index) {
+                    btn.disabled = true;
+                    btn.classList.add('opacity-20');
+                }
+            });
+            playTone(700, 'triangle', 0.1, 0.2);
+        }
+
+        function useJokerAudience() {
+            if (jokerAudUsed || isMilAnswered) return;
+            jokerAudUsed = true;
+            document.getElementById('joker-aud').disabled = true;
+            document.getElementById('joker-aud').classList.add('opacity-40');
+
+            const q = milQuestions[currentMilIndex];
+            alert(`👥 Seyirci Oylaması Sonucu:\n\n%68 -> ${String.fromCharCode(65 + q.correct_index)} Seçeneği\n%14 -> Diğer\n%10 -> Diğer\n%8 -> Diğer`);
+        }
+
+        function useJokerPass() {
+            if (jokerPassUsed || isMilAnswered) return;
+            jokerPassUsed = true;
+            document.getElementById('joker-pass').disabled = true;
+            document.getElementById('joker-pass').classList.add('opacity-40');
+            nextMilQuestion();
+        }
+
+        function getFallbackQuestions() {
+            return [
+                { level: 1, points: "5", title: "5 Puan", prompt: "Kur'an-ı Kerim'in 'Fâtiha' sûresinin ilk âyeti hangisidir?", ayah_arabic: "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحٖيمِ", translation: "Rahmân ve Rahîm olan Allah'ın adıyla.", options: ["بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحٖيمِ", "اَلْحَمْدُ لِلّٰهِ رَبِّ الْعَالَمٖينَ", "مَالِكِ يَوْمِ الدّٖينِ", "اِيَّاكَ نَعْبُدُ"], correct_index: 0, joker_50_eliminated: [1, 2], audio_url: "https://mirrors.quranicaudio.com/everyayah/Husary_Muallim_128kbps/001001.mp3" },
+                { level: 2, points: "10", title: "10 Puan", prompt: "İhlas Sûresi 2. âyetinde 'Allah Samed'dir' buyrulan âyet metni hangisidir?", ayah_arabic: "اَللّٰهُ الصَّمَدُ", translation: "Allah Samed'dir.", options: ["قُلْ هُوَ اللّٰهُ اَحَدٌ", "اَللّٰهُ الصَّمَدُ", "لَمْ يَلِدْ", "وَلَمْ يَكُنْ"], correct_index: 1, joker_50_eliminated: [0, 3], audio_url: "https://mirrors.quranicaudio.com/everyayah/Husary_Muallim_128kbps/112002.mp3" },
+                { level: 3, points: "15", title: "15 Puan", prompt: "Bakara Sûresi 255. âyet-i kerimesinin (Âyet-el Kürsî) başındaki hitap nasıldır?", ayah_arabic: "اَللّٰهُ لَٓا اِلٰهَ اِلَّا هُوَۚ اَلْحَیُّ الْقَيُّومُ", translation: "Allah, O'ndan başka hiçbir ilâh olmayandır.", options: ["اَللّٰهُ لَٓا اِلٰهَ اِلَّا هُوَ", "يٰٓا اَيُّهَا النَّاسُ", "شَهِدَ اللّٰهُ", "قُلْ اِنْ كُنْتُمْ"], correct_index: 0, joker_50_eliminated: [1, 3], audio_url: "https://mirrors.quranicaudio.com/everyayah/Husary_Muallim_128kbps/002255.mp3" },
+                { level: 4, points: "25", title: "25 Puan (1. Baraj) 🛡️", prompt: "Asr Sûresinde insanların hüsranda olduğu ancak kimlerin müstesna kılındığı buyrulur?", ayah_arabic: "اِلَّا الَّذٖينَ اٰمَنُوا وَعَمِلُوا الصَّالِحَاتِ", translation: "Ancak îmân edip sâlih amel işleyenler müstesnadır.", options: ["İman edip salih amel işleyenler", "Ticaret yapanlar", "Mal biriktirenler", "Yolculuk edenler"], correct_index: 0, joker_50_eliminated: [2, 3], audio_url: "https://mirrors.quranicaudio.com/everyayah/Husary_Muallim_128kbps/103003.mp3" }
+            ];
+        }
+
+        initMilGame();
+    </script>
+</body>
+</html>

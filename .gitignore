@@ -1,0 +1,34 @@
+# ==============================================================================
+# Zakirun Kur'an TV ve Hâfızlık Bilgi Yarışması // .gitignore
+# ==============================================================================
+
+# Büyük Veritabanı Dosyaları (>100MB GitHub dosya sınırı)
+# Not: Kur'an Fihristi ve 6.236 Âyet Turso LibSQL Bulutunda (aws-eu-west-1) canlıdır.
+kuran_master_fihrist_v2.db
+database/kuran_master_fihrist_v2.db
+*.db-shm
+*.db-wal
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+.venv/
+env/
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# Sistem ve Editör Dosyaları
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+desktop.ini
+*.log
+*.tmp
+.idea/
+.vscode/

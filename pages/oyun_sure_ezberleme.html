@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sûre Ezberleme Oyunu // Zakirun Kur'an Oyunları</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        studio: {
+                            950: '#030712',
+                            900: '#0b0f19',
+                            850: '#0f172a',
+                            800: '#111827',
+                            gold: '#fbbf24',
+                            amber: '#f59e0b',
+                            crimson: '#ef4444',
+                            emerald: '#10b981',
+                            cyan: '#06b6d4',
+                            violet: '#8b5cf6'
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        scheherazade: ['"Scheherazade New"', 'serif'],
+                        zakirun: ['ZakirunUthmani', 'serif'],
+                        amiri: ['Amiri', 'serif'],
+                        inter: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;500;600;700;800&family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600;700;900&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @font-face {
+            font-family: 'ZakirunUthmani';
+            src: url('/zakirun.com.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        body {
+            background: radial-gradient(circle at 50% 10%, #1e1b4b 0%, #090d16 55%, #030712 100%);
+            color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+        .quran-font {
+            font-family: 'Scheherazade New', 'ZakirunUthmani', 'Amiri', serif;
+            direction: rtl;
+            line-height: 2.0;
+            letter-spacing: 0.5px;
+        }
+        /* Ekolayzır Ses Dalgaları (Kesin Yatay Görünüm) */
+        #equalizer-container {
+            display: inline-flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 4px !important;
+            height: 32px !important;
+            padding: 0 10px !important;
+            box-sizing: border-box !important;
+        }
+        .equalizer-bar {
+            width: 3.5px !important;
+            display: inline-block !important;
+            border-radius: 9999px !important;
+            background: linear-gradient(to top, #06b6d4, #10b981) !important;
+            animation: bounce 0.6s ease-in-out infinite alternate !important;
+            transform-origin: bottom !important;
+        }
+        .equalizer-bar:nth-child(1) { height: 10px !important; animation-delay: 0.1s !important; }
+        .equalizer-bar:nth-child(2) { height: 18px !important; animation-delay: 0.3s !important; }
+        .equalizer-bar:nth-child(3) { height: 24px !important; animation-delay: 0.2s !important; }
+        .equalizer-bar:nth-child(4) { height: 14px !important; animation-delay: 0.4s !important; }
+        .equalizer-bar:nth-child(5) { height: 20px !important; animation-delay: 0.15s !important; }
+        .equalizer-bar:nth-child(6) { height: 12px !important; animation-delay: 0.25s !important; }
+        @keyframes bounce {
+            0% { transform: scaleY(0.3); opacity: 0.5; }
+            100% { transform: scaleY(1.0); opacity: 1; }
+        }
+        .equalizer-paused .equalizer-bar {
+            animation-play-state: paused !important;
+            transform: scaleY(0.3) !important;
+            opacity: 0.4 !important;
+        }
+        /* Seçenek Kartı Efektleri */
+        .option-card {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        .option-card:hover:not(.locked) {
+            transform: translateY(-4px);
+            border-color: rgba(245, 158, 11, 0.7);
+            box-shadow: 0 12px 28px -6px rgba(245, 158, 11, 0.25);
+        }
+        .option-card.selected-correct {
+            border-color: #10b981 !important;
+            background-color: rgba(16, 185, 129, 0.15) !important;
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.4) !important;
+            transform: scale(1.02);
+        }
+        .option-card.selected-wrong {
+            border-color: #ef4444 !important;
+            background-color: rgba(239, 68, 68, 0.15) !important;
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.4) !important;
+            animation: shake 0.4s ease-in-out;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .respect-pulse {
+            animation: respectGlow 2s infinite ease-in-out;
+        }
+        @keyframes respectGlow {
+            0%, 100% { border-color: rgba(6, 182, 212, 0.4); box-shadow: 0 0 15px rgba(6, 182, 212, 0.2); }
+            50% { border-color: rgba(6, 182, 212, 0.9); box-shadow: 0 0 30px rgba(6, 182, 212, 0.45); }
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen selection:bg-amber-500 selection:text-black">
+
+    <!-- ÜST BİLGİ VE NAVİGASYON ÇUBUĞU -->
+    <header class="border-b border-white/10 bg-studio-950/80 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-3">
+            <!-- Sol: Ana Sayfa & Logo -->
+            <div class="flex items-center gap-2.5 sm:gap-3">
+                <a href="/" class="p-2 sm:p-2.5 rounded-xl bg-studio-800 border border-white/10 hover:border-amber-400/50 hover:bg-studio-800/80 transition flex items-center gap-1.5 text-xs font-semibold text-gray-300 hover:text-white" title="Ana Sayfaya Dön">
+                    <span>←</span>
+                    <span class="hidden md:inline">Ana Sayfa</span>
+                </a>
+                <div class="flex items-center gap-2">
+                    <div class="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-xl shadow-inner">
+                        📖
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-sm sm:text-base lg:text-lg font-black tracking-wide text-white font-orbitron">
+                                SÛRE EZBERLEME OYUNU
+                            </h1>
+                            <span class="hidden lg:inline px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+                                Sûre Bütünlüğü
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-gray-400 hidden sm:block">1. Âyetten Sona Doğru Kesintisiz Ezber Takibi</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orta: Sûre Seçimi & Zorluk Endeksi -->
+            <div class="flex items-center gap-2">
+                <!-- 2. Oda Oyunlar Arası Hızlı Geçiş -->
+                <div class="hidden md:flex items-center p-1 rounded-xl bg-studio-900 border border-white/10 text-xs mr-2">
+                    <span class="px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold flex items-center gap-1">
+                        <span>📖</span>
+                        <span>Sonraki Âyet</span>
+                    </span>
+                    <a href="/oyun/ayet-tamamlama" class="px-2.5 py-1 rounded-lg text-gray-400 hover:text-white font-medium transition flex items-center gap-1">
+                        <span>✍️</span>
+                        <span>Âyet Tamamlama</span>
+                    </a>
+                </div>
+
+                <!-- Sûre Seçici Dropdown -->
+                <select id="select-surah" onchange="changeSurah(parseInt(this.value))" class="bg-studio-900 border border-white/15 text-white rounded-xl px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-amber-400 cursor-pointer">
+                    <!-- Popüler Kısa Sûreler ve Tüm Sûreler JS ile doldurulur -->
+                </select>
+
+                <!-- Zorluk Düğmesi (Kolay / Zor Müteşâbih) -->
+                <div class="flex items-center bg-studio-900 border border-white/10 rounded-xl p-0.5 text-xs">
+                    <button id="btn-diff-easy" onclick="setDifficulty('easy')" class="px-2.5 py-1 rounded-lg font-bold transition text-gray-400 hover:text-white">
+                        Kolay
+                    </button>
+                    <button id="btn-diff-hard" onclick="setDifficulty('hard')" class="px-2.5 py-1 rounded-lg font-bold transition bg-amber-500 text-black shadow-sm">
+                        Zor (Müteşâbih)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sağ: Hatalı Cevaplarım & Mod (Tek/Düello) & Puan -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- Hatalı Cevaplarım Butonu -->
+                <button onclick="openMistakesModal()" class="px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/30 hover:border-rose-400 text-rose-300 text-xs font-bold flex items-center gap-1.5 transition shadow-sm" title="Hatalı Cevaplarımı İncele">
+                    <span>📊</span>
+                    <span class="hidden sm:inline">Hatalı Cevaplarım</span>
+                    <span id="txt-nav-mistakes-badge" class="px-1.5 py-0.2 rounded-full bg-rose-500/30 text-rose-200 text-[10px] font-mono">0</span>
+                </button>
+
+                <div class="flex items-center bg-studio-900 border border-white/10 rounded-xl p-0.5 text-xs">
+                    <button id="btn-mode-solo" onclick="setGameMode('solo')" class="px-2.5 py-1 rounded-lg font-bold transition bg-amber-500 text-black">
+                        👤 Tek
+                    </button>
+                    <button id="btn-mode-duel" onclick="handleDuelButtonClick()" class="px-2.5 py-1 rounded-lg font-bold transition text-gray-400 hover:text-white flex items-center gap-1">
+                        <span id="txt-duel-lock-icon">🔒</span>
+                        <span>Düello</span>
+                    </button>
+                </div>
+                <div class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500/20 to-amber-500/20 border border-cyan-500/40 flex items-center gap-1.5">
+                    <span class="text-xs text-cyan-200 hidden sm:inline">Puan:</span>
+                    <span id="txt-user-score" class="text-sm sm:text-base font-black text-amber-400 font-orbitron">0</span>
+                    <span class="text-[10px] text-gray-400">/ 100</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 1V1 DÜELLO DURUM ŞERİDİ -->
+    <div id="duel-status-bar" class="hidden border-b border-indigo-500/20 bg-indigo-950/40 backdrop-blur-sm py-3 px-4">
+        <div class="max-w-4xl mx-auto flex items-center justify-between text-xs sm:text-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-lg">🧕</div>
+                <div>
+                    <div class="font-bold text-white flex items-center gap-2">
+                        <span>Siz (Yarışmacı)</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono">Hazır</span>
+                    </div>
+                    <div class="text-[11px] text-amber-400 font-orbitron">Skor: <span id="txt-duel-player-score">0</span> P</div>
+                </div>
+            </div>
+
+            <div class="flex flex-col items-center">
+                <div class="px-3 py-1 rounded-full bg-studio-900 border border-purple-500/30 text-[11px] font-black text-purple-300 font-orbitron">VS</div>
+                <span id="txt-bot-status-ticker" class="text-[10px] text-cyan-300 mt-1 font-mono animate-pulse">Bot tilâveti dinliyor...</span>
+            </div>
+
+            <div class="flex items-center gap-3 text-right">
+                <div>
+                    <div class="font-bold text-white flex items-center justify-end gap-2">
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono" id="txt-duel-bot-elo">1950 ELO</span>
+                        <span id="txt-duel-bot-name">Ahmet Hâfız (30. Cüz)</span>
+                    </div>
+                    <div class="text-[11px] text-purple-400 font-orbitron">Skor: <span id="txt-duel-bot-score">0</span> P</div>
+                </div>
+                <div class="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-lg">🤖</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ANA OYUN ALANI -->
+    <main class="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 flex flex-col justify-between">
+
+        <!-- SÛRE İLERLEME ÇUBUĞU (ADIM ADIM ÂYETLER) -->
+        <div class="mb-6">
+            <div class="flex items-center justify-between text-xs mb-2">
+                <span class="font-bold text-gray-300 flex items-center gap-2">
+                    <span class="text-cyan-400">📖</span>
+                    <span id="txt-surah-title" class="font-orbitron tracking-wide text-white">FÂTİHA SÛRESİ</span>
+                    <span class="text-gray-500">•</span>
+                    <span id="txt-step-indicator" class="text-amber-400 font-mono font-bold">1. Âyet / Toplam 7 Âyet</span>
+                </span>
+                <span id="txt-difficulty-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                    Zor Mod (Müteşâbih Çeldiriciler)
+                </span>
+            </div>
+            <!-- İlerleme Çubuğu -->
+            <div class="w-full h-2.5 rounded-full bg-studio-900 border border-white/10 overflow-hidden p-0.5">
+                <div id="progress-bar-fill" class="h-full rounded-full bg-gradient-to-r from-cyan-500 via-amber-400 to-emerald-400 transition-all duration-500" style="width: 14%;"></div>
+            </div>
+        </div>
+
+        <!-- 1. BÖLÜM: DİNLENEN ÂYET (MEVCUT ÂYET KARTI) -->
+        <div class="mb-6">
+            <div class="bg-gradient-to-b from-studio-850 to-studio-900 border-2 border-cyan-500/30 rounded-3xl p-5 sm:p-7 shadow-2xl relative overflow-hidden">
+                <div class="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center justify-center font-bold text-xs font-orbitron" id="txt-current-ayah-badge">
+                            1
+                        </span>
+                        <div>
+                            <span class="text-xs font-bold text-cyan-300 block">DİNLENEN ÂYET</span>
+                            <span class="text-[11px] text-gray-400" id="txt-current-ayah-ref">Fâtiha Sûresi, 1. Âyet</span>
+                        </div>
+                    </div>
+                    <!-- Ses Çalıcı Ekolayzır & Buton -->
+                    <div class="flex items-center gap-3">
+                        <div id="equalizer-container" class="inline-flex flex-row items-center gap-1.5 h-8 px-2.5 py-1 rounded-full bg-studio-950/80 border border-cyan-500/30 equalizer-paused">
+                            <span class="text-[11px] text-cyan-400 font-bold mr-1 flex items-center">🔊</span>
+                            <div class="equalizer-bar"></div>
+                            <div class="equalizer-bar"></div>
+                            <div class="equalizer-bar"></div>
+                            <div class="equalizer-bar"></div>
+                            <div class="equalizer-bar"></div>
+                            <div class="equalizer-bar"></div>
+                        </div>
+                        <button onclick="replayCurrentAyah()" class="px-3.5 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 text-xs font-bold transition flex items-center gap-1.5" title="Tekrar Dinle">
+                            <span>🔄</span>
+                            <span class="hidden sm:inline">Tekrar Dinle</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dinlenen Âyetin Arapça Metni (Scheherazade New) -->
+                <div class="text-center py-2 sm:py-3" dir="rtl">
+                    <p id="txt-current-arabic" class="quran-font text-2xl sm:text-3xl lg:text-4xl font-bold text-white leading-relaxed">
+                        بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+                    </p>
+                </div>
+                <!-- Türkçe Meâl -->
+                <p id="txt-current-translation" class="text-center text-xs sm:text-sm text-gray-400 italic pt-2 border-t border-white/5">
+                    "Rahmân ve Rahîm olan Allah'ın adıyla."
+                </p>
+            </div>
+        </div>
+
+        <!-- 2. BÖLÜM: SORU METNİ VE EDEP/SAYGI KURALI BİLDİRİMİ -->
+        <div class="text-center space-y-2 mb-5">
+            <!-- İstenen Kesin Soru Başlığı -->
+            <h2 class="text-xl sm:text-2xl lg:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-300 tracking-wide font-inter">
+                Dinlenen âyetten sonraki âyet hangisi, işaretleyiniz
+            </h2>
+
+            <!-- EDEP & TİLÂVET SAYGI BİLDİRİMİ (Cevap Verildiğinde Tilâvet Bitene Kadar Gösterilir) -->
+            <div id="respect-banner" class="hidden max-w-xl mx-auto p-3.5 rounded-2xl bg-cyan-950/60 border-2 border-cyan-400/60 text-center respect-pulse transition">
+                <div class="flex items-center justify-center gap-2 text-cyan-300 text-xs sm:text-sm font-bold">
+                    <span>🕊️</span>
+                    <span>"Kur'an okunduğu zaman onu dinleyin ve susun..." (A'râf, 204)</span>
+                </div>
+                <p class="text-[11px] text-gray-300 mt-1">
+                    Cevabınız kaydedildi. Âyet tilâveti tamamlanıyor, lütfen okuyucuyu dinleyiniz... 🎧
+                </p>
+            </div>
+        </div>
+
+        <!-- 3. BÖLÜM: 4 SEÇENEK KARTI ([A], [B], [C], [D]) -->
+        <div class="space-y-3 mb-6">
+            <div id="options-container" class="grid grid-cols-1 gap-3">
+                <!-- 4 Seçenek Dinamik Olarak Buraya Doldurulur -->
+            </div>
+        </div>
+
+        <!-- 4. BÖLÜM: GERİ BİLDİRİM KUTUSU -->
+        <div id="feedback-box" class="hidden p-4 rounded-2xl border text-center transition">
+            <p id="txt-feedback-msg" class="text-base font-bold"></p>
+            <p id="txt-feedback-sub" class="text-xs text-gray-400 mt-1"></p>
+        </div>
+
+    </main>
+
+    <!-- SÛRE TAMAMLAMA & TEBRİK MODALI -->
+    <div id="finish-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-studio-900 border-2 border-amber-500/50 rounded-3xl p-6 sm:p-8 max-w-lg w-full text-center shadow-2xl relative overflow-hidden">
+            <div class="w-20 h-20 rounded-3xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-4xl mx-auto mb-4">
+                👑
+            </div>
+            <h3 class="text-2xl font-black text-white font-orbitron" id="txt-modal-title">
+                SÛRE HIFZI TAMAMLANDI!
+            </h3>
+            <p class="text-xs sm:text-sm text-gray-300 mt-2" id="txt-modal-desc">
+                Sûre akışını ve âyet sırasını mükemmel bir şekilde tamamladınız.
+            </p>
+
+            <div class="my-6 p-4 rounded-2xl bg-studio-950 border border-white/10 flex items-center justify-around">
+                <div>
+                    <div class="text-xs text-gray-400">Doğru Âyet</div>
+                    <div class="text-xl font-black text-emerald-400 font-orbitron" id="txt-modal-correct">6 / 6</div>
+                </div>
+                <div class="w-px h-10 bg-white/10"></div>
+                <div>
+                    <div class="text-xs text-gray-400">Motivasyon Puanı</div>
+                    <div class="text-2xl font-black text-amber-400 font-orbitron" id="txt-modal-score">100 P</div>
+                </div>
+                <div class="w-px h-10 bg-white/10"></div>
+                <div>
+                    <div class="text-xs text-gray-400">Zorluk Seviyesi</div>
+                    <div class="text-xs font-bold text-cyan-300" id="txt-modal-diff">Zor (Müteşâbih)</div>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button onclick="restartSurah()" class="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-black text-sm hover:from-amber-300 hover:to-yellow-400 transition shadow-lg shadow-amber-500/20">
+                    🔄 Sûreyi Tekrarla
+                </button>
+                <button onclick="nextSurah()" class="flex-1 py-3.5 rounded-xl bg-studio-800 border border-white/10 text-white font-bold text-sm hover:bg-studio-800/80 transition flex items-center justify-center">
+                    📖 Sıradaki Sûreye Geç →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT OYUN MOTORU & KESİNTİSİZ TİLÂVET YÖNETİMİ -->
+    <script>
+        // Web Audio API
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+        function getAudioContext() {
+            if (!audioCtx) audioCtx = new AudioCtx();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            return audioCtx;
+        }
+        function playChime(isCorrect) {
+            try {
+                const ctx = getAudioContext();
+                if (isCorrect) {
+                    [523.25, 659.25, 783.99].forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.08);
+                        gain.gain.setValueAtTime(0.12, ctx.currentTime + idx * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + idx * 0.08 + 0.35);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(ctx.currentTime + idx * 0.08);
+                        osc.stop(ctx.currentTime + idx * 0.08 + 0.35);
+                    });
+                } else {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.3);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.3);
+                }
+            } catch (e) {}
+        }
+
+        // Oyun Durumu
+        let currentSurahId = 1; // Fâtiha
+        let currentDifficulty = 'hard'; // 'easy' veya 'hard'
+        let currentMode = 'solo'; // 'solo' veya 'duel'
+        let currentRoundStep = 0;
+        let roundsData = [];
+        let userScore = 0;
+        let correctCount = 0;
+        let isAnswerLocked = false;
+        let currentAudio = null;
+        let isAudioPlaying = false;
+        let hasAudioFinished = false;
+        let hasShownRespectBannerInSession = false; // Hürmet bildirimi oturumda sadece ilk soruda gösterilir
+
+        // 1v1 Düello
+        let duelOpponent = null;
+        let botScore = 0;
+        let botTimer = null;
+        let duelId = null;
+
+        // Sûre Listesi (114 Sûre ve Kısa Sûreler)
+        const SURAHS_LIST = [
+            { id: 1, name: "Fâtiha", ayahs: 7 },
+            { id: 112, name: "İhlâs", ayahs: 4 },
+            { id: 113, name: "Felak", ayahs: 5 },
+            { id: 114, name: "Nâs", ayahs: 6 },
+            { id: 108, name: "Kevser", ayahs: 3 },
+            { id: 109, name: "Kâfirûn", ayahs: 6 },
+            { id: 110, name: "Nasr", ayahs: 3 },
+            { id: 111, name: "Tebbet", ayahs: 5 },
+            { id: 107, name: "Mâ'ûn", ayahs: 7 },
+            { id: 106, name: "Kureyş", ayahs: 4 },
+            { id: 105, name: "Fîl", ayahs: 5 },
+            { id: 103, name: "Asr", ayahs: 3 },
+            { id: 97, name: "Kadir", ayahs: 5 },
+            { id: 95, name: "Tîn", ayahs: 8 },
+            { id: 94, name: "İnşirâh", ayahs: 8 },
+            { id: 93, name: "Duhâ", ayahs: 11 },
+            { id: 67, name: "Mülk", ayahs: 30 },
+            { id: 36, name: "Yâsîn", ayahs: 83 }
+        ];
+
+        
+        let mistakeOccurredThisSession = false;
+
+        
+        function unlockDuelForSurah(surahId) {
+            const unlocked = JSON.parse(localStorage.getItem('zakirun_unlocked_duels') || '{}');
+            unlocked[`sure_ezberleme_${surahId}`] = true;
+            localStorage.setItem('zakirun_unlocked_duels', JSON.stringify(unlocked));
+            updateDuelLockStatus();
+        }
+
+        function isDuelUnlockedForSurah(surahId) {
+            const unlocked = JSON.parse(localStorage.getItem('zakirun_unlocked_duels') || '{}');
+            return !!unlocked[`sure_ezberleme_${surahId}`];
+        }
+
+        function updateDuelLockStatus() {
+            const isUnlocked = isDuelUnlockedForSurah(currentSurahId);
+            const lockIcon = document.getElementById('txt-duel-lock-icon');
+            const btnDuel = document.getElementById('btn-mode-duel');
+            if (lockIcon) {
+                lockIcon.innerText = isUnlocked ? '⚔️' : '🔒';
+            }
+            if (btnDuel) {
+                btnDuel.title = isUnlocked ? '1v1 Düello Açık!' : 'Önce Tek Kişilik Modda %100 Tamamlayınız';
+            }
+        }
+
+        function handleDuelButtonClick() {
+            if (!isDuelUnlockedForSurah(currentSurahId)) {
+                document.getElementById('duel-locked-modal').classList.remove('hidden');
+                return;
+            }
+            setGameMode('duel');
+        }
+
+        function closeDuelLockedModal() {
+            document.getElementById('duel-locked-modal').classList.add('hidden');
+        }
+
+        function recordMistake(data) {
+            const mistakes = JSON.parse(localStorage.getItem('zakirun_mistakes_log') || '[]');
+            const entry = {
+                id: 'mstk-' + Date.now(),
+                game_name: data.game_name || "Sûre Ezberleme Oyunu",
+                game_id: data.game_id || "sure_ezberleme",
+                surah_id: data.surah_id,
+                sure_name: data.sure_name,
+                ayah_id: data.ayah_id,
+                reference: data.reference,
+                question_type: data.question_type || "Sonraki Âyet",
+                target_text: data.target_text,
+                selected_wrong_text: data.selected_wrong_text,
+                full_ayah_text: data.full_ayah_text || "",
+                timestamp: Date.now(),
+                date_str: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+            };
+            mistakes.unshift(entry);
+            localStorage.setItem('zakirun_mistakes_log', JSON.stringify(mistakes));
+            updateMistakesBadge();
+
+            fetch('/api/gameshow/mistakes/record', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(entry)
+            }).catch(() => {});
+        }
+
+        function updateMistakesBadge() {
+            const mistakes = JSON.parse(localStorage.getItem('zakirun_mistakes_log') || '[]');
+            const badge = document.getElementById('txt-nav-mistakes-badge');
+            if (badge) badge.innerText = mistakes.length;
+        }
+
+        let currentMistakeFilter = 'all';
+
+        function openMistakesModal() {
+            document.getElementById('mistakes-modal').classList.remove('hidden');
+            renderMistakesList();
+        }
+
+        function closeMistakesModal() {
+            document.getElementById('mistakes-modal').classList.add('hidden');
+        }
+
+        function filterMistakes(filter) {
+            currentMistakeFilter = filter;
+            ['all', 'ayet', 'sure', 'okunan'].forEach(k => {
+                const btn = document.getElementById(`btn-filter-${k}`);
+                if (btn) btn.className = 'px-3 py-1 rounded-lg text-xs font-bold bg-studio-800 text-gray-400 hover:text-white';
+            });
+            const activeMap = { 'all': 'btn-filter-all', 'ayet_tamamlama': 'btn-filter-ayet', 'sure_ezberleme': 'btn-filter-sure', 'okunan_kelime': 'btn-filter-okunan' };
+            const activeBtn = document.getElementById(activeMap[filter]);
+            if (activeBtn) activeBtn.className = 'px-3 py-1 rounded-lg text-xs font-bold bg-amber-500 text-black';
+            renderMistakesList();
+        }
+
+        function renderMistakesList() {
+            const container = document.getElementById('mistakes-list-container');
+            const mistakes = JSON.parse(localStorage.getItem('zakirun_mistakes_log') || '[]');
+            let filtered = mistakes;
+            if (currentMistakeFilter !== 'all') {
+                filtered = mistakes.filter(m => m.game_id === currentMistakeFilter);
+            }
+
+            document.getElementById('txt-mistakes-total-summary').innerText = `Toplam: ${filtered.length} Hata Kaydı`;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-gray-400 text-xs">
+                        <div class="text-3xl mb-2">🎉</div>
+                        Henüz kayıtlı hatalı cevabınız bulunmuyor. Mâşâallâh!
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(m => `
+                <div class="p-4 rounded-2xl bg-studio-950 border border-white/5 space-y-2 hover:border-white/10 transition">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="px-2 py-0.5 rounded-lg bg-cyan-500/15 text-cyan-300 font-bold font-orbitron text-[10px]">
+                            ${m.game_name}
+                        </span>
+                        <span class="text-gray-400 text-[11px] font-mono">${m.reference || ''} (${m.date_str || ''})</span>
+                    </div>
+
+                    ${m.full_ayah_text ? `
+                        <div class="quran-font text-lg text-white/90 text-right py-1 leading-relaxed" dir="rtl">
+                            ${m.full_ayah_text}
+                        </div>
+                    ` : ''}
+
+                    <div class="flex items-center justify-between text-xs pt-1 border-t border-white/5">
+                        <div>
+                            <span class="text-emerald-400 font-bold">Doğru:</span>
+                            <span class="quran-font text-emerald-300 text-sm ml-1" dir="rtl">${m.target_text}</span>
+                        </div>
+                        <div>
+                            <span class="text-rose-400 font-bold">İşaretlenen:</span>
+                            <span class="quran-font text-rose-300 text-sm ml-1" dir="rtl">${m.selected_wrong_text}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function clearAllMistakes() {
+            if (confirm("Hatalı cevaplar listenizi sıfırlamak istediğinize emin misiniz?")) {
+                localStorage.removeItem('zakirun_mistakes_log');
+                updateMistakesBadge();
+                renderMistakesList();
+                fetch('/api/gameshow/mistakes/clear', { method: 'POST' }).catch(() => {});
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            updateMistakesBadge();
+            updateDuelLockStatus();
+            initSurahDropdown();
+            initGame();
+
+            // Klavye Kısayolları (1, 2, 3, 4 tuşları)
+            window.addEventListener('keydown', (e) => {
+                if (['Digit1', 'KeyA'].includes(e.code)) selectOption(0);
+                else if (['Digit2', 'KeyB'].includes(e.code)) selectOption(1);
+                else if (['Digit3', 'KeyC'].includes(e.code)) selectOption(2);
+                else if (['Digit4', 'KeyD'].includes(e.code)) selectOption(3);
+                else if (e.code === 'Space') {
+                    e.preventDefault();
+                    replayCurrentAyah();
+                }
+            });
+        });
+
+        let ALL_SURAHS_LIST = [];
+
+        async function initSurahDropdown() {
+            const sel = document.getElementById('select-surah');
+            if (!sel) return;
+
+            try {
+                const res = await fetch('/api/surahs');
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json && json.data && json.data.length > 0) {
+                        ALL_SURAHS_LIST = json.data.map(s => ({
+                            id: s.surah_id,
+                            name: s.sure_name,
+                            ayahs: s.ayah_count,
+                            page: s.page_start
+                        }));
+                        renderSurahsGrouped(ALL_SURAHS_LIST);
+                        return;
+                    }
+                }
+            } catch(e) {
+                console.warn('Surah list fetch fallback:', e);
+            }
+
+            ALL_SURAHS_LIST = SURAHS_LIST;
+            renderSurahsGrouped(SURAHS_LIST);
+        }
+
+        function renderSurahsGrouped(surahs) {
+            const sel = document.getElementById('select-surah');
+            if (!sel) return;
+            sel.innerHTML = '';
+
+            const popIds = [1, 112, 113, 114, 108, 103, 105, 106, 110, 111, 109, 97, 107, 67, 36, 55, 56];
+            const popularSurahs = surahs.filter(s => popIds.includes(s.id));
+            const cüz30 = surahs.filter(s => s.id >= 78 && s.id <= 114);
+            const cüz29 = surahs.filter(s => s.id >= 67 && s.id <= 77);
+            const otherSurahs = surahs.filter(s => s.id < 67 && s.id !== 1 && s.id !== 36 && s.id !== 55 && s.id !== 56);
+
+            // 1. Popüler & Sık Ezberlenenler
+            const grpPop = document.createElement('optgroup');
+            grpPop.label = "⭐ SIK EZBERLENEN SÛRELER";
+            popularSurahs.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.innerText = `${s.id}. ${s.name} (${s.ayahs} Âyet)`;
+                if (s.id === currentSurahId) opt.selected = true;
+                grpPop.appendChild(opt);
+            });
+            sel.appendChild(grpPop);
+
+            // 2. 30. Cüz (Amme Cüzü)
+            const grp30 = document.createElement('optgroup');
+            grp30.label = "📖 30. CÜZ (AMME CÜZÜ / 78-114)";
+            cüz30.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.innerText = `${s.id}. ${s.name} (${s.ayahs} Âyet)`;
+                if (s.id === currentSurahId) opt.selected = true;
+                grp30.appendChild(opt);
+            });
+            sel.appendChild(grp30);
+
+            // 3. 29. Cüz (Mülk / Tebareke Grubu)
+            const grp29 = document.createElement('optgroup');
+            grp29.label = "📜 29. CÜZ (MÜLK / TEBAREKE / 67-77)";
+            cüz29.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.innerText = `${s.id}. ${s.name} (${s.ayahs} Âyet)`;
+                if (s.id === currentSurahId) opt.selected = true;
+                grp29.appendChild(opt);
+            });
+            sel.appendChild(grp29);
+
+            // 4. Tüm Diğer Sûreler
+            const grpAll = document.createElement('optgroup');
+            grpAll.label = "🌟 DİĞER TÜM SÛRELER (1-66)";
+            otherSurahs.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.innerText = `${s.id}. ${s.name} (${s.ayahs} Âyet)`;
+                if (s.id === currentSurahId) opt.selected = true;
+                grpAll.appendChild(opt);
+            });
+            sel.appendChild(grpAll);
+        }
+
+
+        function changeSurah(surahId) {
+            currentSurahId = surahId;
+            restartSurah();
+        }
+
+        function setDifficulty(diff) {
+            currentDifficulty = diff;
+            const btnEasy = document.getElementById('btn-diff-easy');
+            const btnHard = document.getElementById('btn-diff-hard');
+            const badge = document.getElementById('txt-difficulty-badge');
+
+            if (diff === 'easy') {
+                btnEasy.className = 'px-2.5 py-1 rounded-lg font-bold transition bg-emerald-500 text-black shadow-sm';
+                btnHard.className = 'px-2.5 py-1 rounded-lg font-bold transition text-gray-400 hover:text-white';
+                badge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30';
+                badge.innerText = 'Kolay Mod';
+            } else {
+                btnHard.className = 'px-2.5 py-1 rounded-lg font-bold transition bg-amber-500 text-black shadow-sm';
+                btnEasy.className = 'px-2.5 py-1 rounded-lg font-bold transition text-gray-400 hover:text-white';
+                badge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30';
+                badge.innerText = 'Zor Mod (Müteşâbih Çeldiriciler)';
+            }
+            restartSurah();
+        }
+
+        function setGameMode(mode) {
+            currentMode = mode;
+            const btnSolo = document.getElementById('btn-mode-solo');
+            const btnDuel = document.getElementById('btn-mode-duel');
+            const duelBar = document.getElementById('duel-status-bar');
+
+            if (mode === 'solo') {
+                btnSolo.className = 'px-2.5 py-1 rounded-lg font-bold transition bg-amber-500 text-black';
+                btnDuel.className = 'px-2.5 py-1 rounded-lg font-bold transition text-gray-400 hover:text-white';
+                duelBar.classList.add('hidden');
+            } else {
+                btnDuel.className = 'px-2.5 py-1 rounded-lg font-bold transition bg-purple-500 text-white shadow-sm';
+                btnSolo.className = 'px-2.5 py-1 rounded-lg font-bold transition text-gray-400 hover:text-white';
+                duelBar.classList.remove('hidden');
+            }
+            restartSurah();
+        }
+
+        async function initGame() {
+            currentRoundStep = 0;
+            userScore = 0;
+            botScore = 0;
+            correctCount = 0;
+            mistakeOccurredThisSession = false;
+            hasShownRespectBannerInSession = false;
+            updateScoreUI();
+
+            try {
+                if (currentMode === 'duel') {
+                    const res = await fetch('/api/gameshow/surah-memorize/duel/match', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ surah_id: currentSurahId, difficulty: currentDifficulty, player_name: 'Yeni Öğrenen Hâfız' })
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        roundsData = data.rounds;
+                        duelOpponent = data.bot;
+                        duelId = data.duel_id;
+                        document.getElementById('txt-duel-bot-name').innerText = data.bot.name;
+                        document.getElementById('txt-duel-bot-elo').innerText = `${data.bot.elo} ELO`;
+                    } else {
+                        await fetchLocalRounds();
+                    }
+                } else {
+                    const res = await fetch(`/api/gameshow/surah-memorize/session?surah_id=${currentSurahId}&difficulty=${currentDifficulty}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        roundsData = data.rounds;
+                        if (currentMode === 'solo' && roundsData.length > 0) {
+                            // Kural: "Her soru 2. defa sorulacak"
+                            const round2 = roundsData.map(r => ({ ...r }));
+                            roundsData = [...roundsData, ...round2];
+                            roundsData.forEach((r, idx) => { r.step = idx + 1; });
+                        }
+                    } else {
+                        await fetchLocalRounds();
+                    }
+                }
+            } catch (err) {
+                await fetchLocalRounds();
+            }
+
+            renderStep();
+        }
+
+        async function fetchLocalRounds() {
+            // Basit yerel fallback verisi (Fâtiha için)
+            roundsData = [
+                {
+                    step: 1,
+                    total_steps: 6,
+                    surah_id: 1,
+                    sure_name: "Fâtiha",
+                    current_ayah_id: 1,
+                    current_arabic: "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحٖيمِ",
+                    current_translation: "Rahmân ve Rahîm olan Allah'ın adıyla.",
+                    audio_url: "https://mirrors.quranicaudio.com/everyayah/Husary_Muallim_128kbps/001001.mp3",
+                    target_ayah_id: 2,
+                    correct_index: 0,
+                    options: [
+                        { label: "A", arabic: "اَلْحَمْدُ لِلّٰهِ رَبِّ الْعَالَمٖينَۙ", translation: "Hamd, âlemlerin Rabbi olan Allah'a mahsustur.", is_correct: true, ayah_num: 2 },
+                        { label: "B", arabic: "اَلرَّحْمٰنِ الرَّحٖيمِۙ", translation: "O, Rahmân ve Rahîm'dir.", is_correct: false, ayah_num: 3 },
+                        { label: "C", arabic: "مَالِكِ يَوْمِ الدّٖينِؕ", translation: "Din (hesap) gününün sahibidir.", is_correct: false, ayah_num: 4 },
+                        { label: "D", arabic: "اِيَّاكَ نَعْبُدُ وَاِيَّاكَ نَسْتَعٖينُؕ", translation: "Yalnız sana kulluk eder ve yalnız senden yardım dileriz.", is_correct: false, ayah_num: 5 }
+                    ]
+                }
+            ];
+            duelOpponent = { name: "Ahmet Hâfız (30. Cüz)", elo: 1900 };
+            duelId = "local-duel";
+        }
+
+        function restartSurah() {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+            if (botTimer) clearTimeout(botTimer);
+            document.getElementById('finish-modal').classList.add('hidden');
+            document.getElementById('feedback-box').classList.add('hidden');
+            document.getElementById('respect-banner').classList.add('hidden');
+            initGame();
+        }
+
+        function nextSurah() {
+            const idx = (ALL_SURAHS_LIST.length ? ALL_SURAHS_LIST : SURAHS_LIST).findIndex(s => s.id === currentSurahId);
+            if (idx !== -1 && idx + 1 < SURAHS_LIST.length) {
+                changeSurah((ALL_SURAHS_LIST.length ? ALL_SURAHS_LIST : SURAHS_LIST)[idx + 1].id);
+                document.getElementById('select-surah').value = (ALL_SURAHS_LIST.length ? ALL_SURAHS_LIST : SURAHS_LIST)[idx + 1].id;
+            } else {
+                restartSurah();
+            }
+        }
+
+        // Adımı Ekrana Bas
+        function renderStep() {
+            if (currentRoundStep >= roundsData.length) {
+                finishSurah();
+                return;
+            }
+
+            isAnswerLocked = false;
+            hasAudioFinished = false;
+            const r = roundsData[currentRoundStep];
+
+            // Üst Başlıklar & İlerleme
+            document.getElementById('txt-surah-title').innerText = `${r.sure_name.toUpperCase()} SÛRESİ`;
+            document.getElementById('txt-step-indicator').innerText = `${r.step}. Âyet / Toplam ${r.total_steps + 1} Âyet`;
+            
+            const pct = Math.round((r.step / (r.total_steps + 1)) * 100);
+            document.getElementById('progress-bar-fill').style.width = `${pct}%`;
+
+            // Dinlenen Âyet Kartı
+            document.getElementById('txt-current-ayah-badge').innerText = r.current_ayah_id;
+            document.getElementById('txt-current-ayah-ref').innerText = `${r.sure_name} Sûresi, ${r.current_ayah_id}. Âyet`;
+            document.getElementById('txt-current-arabic').innerText = r.current_arabic;
+            document.getElementById('txt-current-translation').innerText = `"${r.current_translation}"`;
+
+            // Bildirimleri gizle
+            document.getElementById('respect-banner').classList.add('hidden');
+            document.getElementById('feedback-box').classList.add('hidden');
+
+            // 4 Seçenek Kartını Oluştur
+            const optContainer = document.getElementById('options-container');
+            optContainer.innerHTML = '';
+
+            r.options.forEach((opt, idx) => {
+                const card = document.createElement('div');
+                card.id = `opt-card-${idx}`;
+                card.className = 'option-card p-4 sm:p-5 rounded-2xl bg-studio-900 border-2 border-white/10 hover:border-amber-400 cursor-pointer transition flex items-center justify-between gap-4 text-left';
+                card.onclick = () => selectOption(idx);
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-3 w-1/4 sm:w-1/6" dir="ltr">
+                        <span class="w-8 h-8 rounded-xl bg-studio-800 border border-white/10 font-black text-amber-300 font-orbitron flex items-center justify-center text-sm transition">
+                            ${opt.label}
+                        </span>
+                        <span class="text-[11px] font-mono text-gray-400 hidden sm:inline">(${idx + 1})</span>
+                    </div>
+
+                    <!-- Âyetin Arapça Metni & Meâli -->
+                    <div class="flex-1 text-right" dir="rtl">
+                        <span class="quran-font text-lg sm:text-2xl font-bold text-white block leading-relaxed">
+                            ${opt.arabic}
+                        </span>
+                        <span class="text-[11px] sm:text-xs text-gray-400 font-inter italic block mt-1" dir="ltr">
+                            ${opt.translation}
+                        </span>
+                    </div>
+                `;
+                optContainer.appendChild(card);
+            });
+
+            // Sesi Başlat
+            playAyahAudio(r.audio_url);
+
+            // 1v1 Düello Bot Simülasyonu
+            if (currentMode === 'duel') {
+                simulateBotStep(r);
+            }
+        }
+
+        // KESİNTİSİZ VE SAYGILI TİLÂVET YÖNETİMİ
+        function playAyahAudio(url) {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+
+            currentAudio = new Audio(url);
+            currentAudio.preload = 'auto';
+
+            currentAudio.addEventListener('play', () => {
+                isAudioPlaying = true;
+                hasAudioFinished = false;
+                document.getElementById('equalizer-container').classList.remove('equalizer-paused');
+            });
+
+            currentAudio.addEventListener('ended', () => {
+                isAudioPlaying = false;
+                hasAudioFinished = true;
+                document.getElementById('equalizer-container').classList.add('equalizer-paused');
+
+                // Eğer kullanıcı cevabını önceden işaretlediyse ve tilâvet şimdi bittiyse:
+                // Kur'an-ı Kerim'e saygılı dinleme tamamlandı, sonraki âyete geç!
+                if (isAnswerLocked) {
+                    proceedToNextStep();
+                }
+            });
+
+            currentAudio.play().catch(() => {});
+        }
+
+        function replayCurrentAyah() {
+            if (!currentAudio) return;
+            currentAudio.currentTime = 0;
+            currentAudio.play().catch(() => {});
+        }
+
+        // Seçenek Seçimi
+        function selectOption(idx) {
+            if (isAnswerLocked) return;
+            isAnswerLocked = true;
+            if (botTimer) clearTimeout(botTimer);
+
+            const r = roundsData[currentRoundStep];
+            const isCorrect = idx === r.correct_index;
+            const chosenCard = document.getElementById(`opt-card-${idx}`);
+            const correctCard = document.getElementById(`opt-card-${r.correct_index}`);
+
+            // Kartları kilitle
+            document.querySelectorAll('.option-card').forEach(c => c.classList.add('locked'));
+
+            const feedbackBox = document.getElementById('feedback-box');
+            const feedbackMsg = document.getElementById('txt-feedback-msg');
+            const feedbackSub = document.getElementById('txt-feedback-sub');
+            feedbackBox.classList.remove('hidden');
+
+            if (isCorrect) {
+                const ptsPerStep = Math.round(100 / (r.total_steps || 1));
+                userScore = Math.min(100, userScore + ptsPerStep);
+                correctCount++;
+                updateScoreUI();
+                playChime(true);
+
+                chosenCard.classList.add('selected-correct');
+                feedbackBox.className = 'p-4 rounded-2xl border border-emerald-500/40 bg-emerald-950/40 text-center transition';
+                feedbackMsg.className = 'text-base font-black text-emerald-400';
+                feedbackMsg.innerText = `🎉 MÂŞÂALLAH! DOĞRU ÂYET (+${ptsPerStep} PUAN)`;
+                feedbackSub.innerText = `${r.sure_name} Sûresi ${r.current_ayah_id}. âyetten sonra ${r.target_ayah_id}. âyet gelmektedir.`;
+            } else {
+                playChime(false);
+                chosenCard.classList.add('selected-wrong');
+                if (correctCard) correctCard.classList.add('selected-correct');
+
+                feedbackBox.className = 'p-4 rounded-2xl border border-rose-500/40 bg-rose-950/40 text-center transition';
+                feedbackMsg.className = 'text-base font-black text-rose-400';
+                feedbackMsg.innerText = `DİKKAT: YANLIŞ ÂYET`;
+                feedbackSub.innerText = `Doğru sonraki âyet [${r.options[r.correct_index].label}] seçeneğindeki ${r.target_ayah_id}. âyetti. (Ekstra tekrar eklendi)`;
+
+                mistakeOccurredThisSession = true;
+                recordMistake({
+                    game_name: "Sûre Ezberleme Oyunu",
+                    game_id: "sure_ezberleme",
+                    surah_id: r.surah_id,
+                    sure_name: r.sure_name,
+                    ayah_id: r.target_ayah_id,
+                    reference: `${r.sure_name} Sûresi, ${r.current_ayah_id}. Âyet -> ${r.target_ayah_id}. Âyet`,
+                    question_type: "Sonraki Âyet",
+                    target_text: r.options[r.correct_index].arabic,
+                    selected_wrong_text: r.options[idx].arabic,
+                    full_ayah_text: r.current_arabic
+                });
+
+                if (currentMode === 'solo') {
+                    // Kural: "eğer yanlış cevaplanan sorular varsa onlar extra 1. daha sorulacak yine yanlış cevaplarsa +1 sorulacak"
+                    roundsData.push({
+                        ...r,
+                        step: roundsData.length + 1
+                    });
+                }
+            }
+
+            // KRİTİK EDEP KURALI DENETİMİ:
+            // Eğer tilâvet henüz devam ediyorsa, ASLA SESİ KESME! Edebe riayet banner'ını göster.
+            if (!hasAudioFinished && isAudioPlaying) {
+                if (!hasShownRespectBannerInSession) {
+                    const respectEl = document.getElementById('respect-banner');
+                    if (respectEl) respectEl.classList.remove('hidden');
+                    hasShownRespectBannerInSession = true;
+                }
+                // audio.onended tetiklenince otomatik olarak proceedToNextStep() çağrılacak!
+            } else {
+                // Tilâvet zaten bitmişse 1.8 saniye sonra sonraki adıma geç
+                setTimeout(proceedToNextStep, 1900);
+            }
+        }
+
+        function proceedToNextStep() {
+            document.getElementById('respect-banner').classList.add('hidden');
+            setTimeout(() => {
+                currentRoundStep++;
+                renderStep();
+            }, 800);
+        }
+
+        // Bot Düello Simülasyonu
+        function simulateBotStep(r) {
+            if (botTimer) clearTimeout(botTimer);
+            const ticker = document.getElementById('txt-bot-status-ticker');
+            ticker.innerText = `${duelOpponent.name} dinliyor...`;
+
+            // Bot düşünme süresi
+            const botDelayMs = Math.floor(Math.random() * 2000) + 2000;
+            botTimer = setTimeout(() => {
+                if (isAnswerLocked) return;
+
+                const isBotCorrect = Math.random() < 0.82;
+                if (isBotCorrect) {
+                    const pts = Math.round(100 / (r.total_steps || 1));
+                    botScore = Math.min(100, botScore + pts);
+                    document.getElementById('txt-duel-bot-score').innerText = botScore;
+                    ticker.innerText = `⚡ ${duelOpponent.name} sonraki âyeti buldu!`;
+                } else {
+                    ticker.innerText = `❌ ${duelOpponent.name} karıştırdı!`;
+                }
+            }, botDelayMs);
+        }
+
+        function updateScoreUI() {
+            document.getElementById('txt-user-score').innerText = userScore;
+            document.getElementById('txt-duel-player-score').innerText = userScore;
+        }
+
+        async function finishSurah() {
+            if (currentAudio) currentAudio.pause();
+
+            const modal = document.getElementById('finish-modal');
+            modal.classList.remove('hidden');
+
+            document.getElementById('txt-modal-correct').innerText = `${correctCount} / ${roundsData.length}`;
+            document.getElementById('txt-modal-score').innerText = `${userScore} P`;
+            document.getElementById('txt-modal-diff').innerText = currentDifficulty === 'hard' ? 'Zor (Müteşâbih)' : 'Kolay';
+
+            if (currentMode === 'duel') {
+                try {
+                    await fetch('/api/gameshow/surah-memorize/duel/finish', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            duel_id: duelId || 'duel-local',
+                            player_name: 'Yeni Öğrenen Hâfız',
+                            bot_name: duelOpponent.name,
+                            player_score: userScore,
+                            bot_score: botScore,
+                            surah_id: currentSurahId
+                        })
+                    });
+                } catch (e) {}
+
+                if (userScore > botScore) {
+                    document.getElementById('txt-modal-title').innerText = "🏆 SÛRE DÜELLO ZAFERİ!";
+                    document.getElementById('txt-modal-desc').innerText = `${duelOpponent.name} karşısında sûre ezberinde üstün gelerek kazandınız! (+20 ELO)`;
+                    confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+                } else {
+                    document.getElementById('txt-modal-title').innerText = "🤝 GÜZEL GAYRET!";
+                    document.getElementById('txt-modal-desc').innerText = `${duelOpponent.name} bu sûrede daha az hata yaptı. Tekrar ederek pekiştirin!`;
+                }
+            } else {
+                if (!mistakeOccurredThisSession) {
+                    unlockDuelForSurah(currentSurahId);
+                    document.getElementById('txt-modal-title').innerText = "👑 KUSURSUZ EZBER TAMAMLANDI!";
+                    document.getElementById('txt-modal-desc').innerText = "Tebrikler! Sûreyi 2 turda hiç hata yapmadan tamamladınız. 1v1 Düello Maçı kilidi açıldı!";
+                    confetti({ particleCount: 150, spread: 90, origin: { y: 0.5 } });
+                } else {
+                    document.getElementById('txt-modal-title').innerText = "🌟 PEKİŞTİRME TAMAMLANDI";
+                    document.getElementById('txt-modal-desc').innerText = `Tüm âyetler ekstra tekrarlarla pekiştirildi. 1v1 Düello kilidini açabilmek için bu sûreyi hiç hata yapmadan (%100) tamamlamalısınız.`;
+                }
+            }
+        }
+    </script>
+    <!-- DÜELLO KİLİTLİ UYARI MODALI -->
+    <div id="duel-locked-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-studio-900 border-2 border-purple-500/50 rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl relative overflow-hidden">
+            <div class="w-16 h-16 rounded-2xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-3xl mx-auto mb-4">
+                🔒
+            </div>
+            <h3 class="text-xl font-black text-white font-orbitron">
+                1V1 DÜELLO KİLİTLİ!
+            </h3>
+            <p class="text-xs sm:text-sm text-gray-300 mt-3 leading-relaxed">
+                Düelloda diğer hâfızlarla karşılaşabilmek için önce bu sûrenin tüm sorularını <strong class="text-amber-400">Tek Kişilik</strong> modda <strong class="text-emerald-400">%100 hatasız</strong> tamamlamalısınız.
+            </p>
+            <p class="text-[11px] text-gray-400 mt-2 italic">
+                "Kur'an ezberinde sağlamlık esastır."
+            </p>
+            <div class="mt-6 flex justify-center">
+                <button onclick="closeDuelLockedModal()" class="px-5 py-2.5 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400 transition shadow-lg">
+                    Tek Kişilik Modda Çalış
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HATALI CEVAPLARIM İSTATİSTİK MODALI -->
+    <div id="mistakes-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-studio-900 border-2 border-rose-500/50 rounded-3xl p-6 sm:p-7 max-w-2xl w-full shadow-2xl relative max-h-[85vh] flex flex-col">
+            <div class="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-xl">
+                        📊
+                    </div>
+                    <div>
+                        <h3 class="text-base sm:text-lg font-black text-white font-orbitron">
+                            HATALI CEVAPLARIM & TEKRAR HAVUZU
+                        </h3>
+                        <p class="text-[11px] text-gray-400">Tek Kişilik Oyunlarda Takıldığınız Âyetler</p>
+                    </div>
+                </div>
+                <button onclick="closeMistakesModal()" class="p-2 rounded-xl bg-studio-800 text-gray-400 hover:text-white transition">
+                    ✕
+                </button>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 mb-4">
+                <button onclick="filterMistakes('all')" id="btn-filter-all" class="px-3 py-1 rounded-lg text-xs font-bold bg-amber-500 text-black">Tümü</button>
+                <button onclick="filterMistakes('sure_ezberleme')" id="btn-filter-sure" class="px-3 py-1 rounded-lg text-xs font-bold bg-studio-800 text-gray-400 hover:text-white">Sûre Ezberleme</button>
+                <button onclick="filterMistakes('ayet_tamamlama')" id="btn-filter-ayet" class="px-3 py-1 rounded-lg text-xs font-bold bg-studio-800 text-gray-400 hover:text-white">Âyet Tamamlama</button>
+                <button onclick="filterMistakes('okunan_kelime')" id="btn-filter-okunan" class="px-3 py-1 rounded-lg text-xs font-bold bg-studio-800 text-gray-400 hover:text-white">Okunan Kelime</button>
+            </div>
+
+            <div id="mistakes-list-container" class="flex-1 overflow-y-auto space-y-3 pr-2"></div>
+
+            <div class="border-t border-white/10 pt-4 mt-4 flex items-center justify-between text-xs">
+                <span class="text-gray-400" id="txt-mistakes-total-summary">Toplam: 0 Hata Kaydı</span>
+                <button onclick="clearAllMistakes()" class="px-3 py-1.5 rounded-xl bg-studio-800 border border-white/10 text-gray-300 hover:text-rose-400 hover:border-rose-400 transition">
+                    🗑️ Havuzu Sıfırla
+                </button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hıfz Karnem & Analiz // Zakirun Kur'an Oyunları</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        studio: {
+                            950: '#030712',
+                            900: '#0b0f19',
+                            800: '#111827',
+                            gold: '#fbbf24',
+                            amber: '#f59e0b',
+                            crimson: '#ef4444',
+                            emerald: '#10b981',
+                            cyan: '#06b6d4',
+                            violet: '#8b5cf6'
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        amiri: ['ZakirunUthmani', 'Amiri', 'serif'],
+                        inter: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600;700;900&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'ZakirunUthmani';
+            src: url('/zakirun.com.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        body {
+            background: radial-gradient(circle at 50% 10%, #1e1b4b 0%, #090d16 55%, #030712 100%);
+            color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+        .quran-font {
+            font-family: 'ZakirunUthmani', 'Amiri', serif;
+            direction: rtl;
+            line-height: 2;
+        }
+    </style>
+</head>
+<body class="selection:bg-amber-500 selection:text-black flex flex-col min-h-screen">
+
+    <!-- TOP BAR -->
+    <header class="border-b border-white/5 bg-studio-950/80 backdrop-blur-md sticky top-0 z-50 px-4 py-3">
+        <div class="max-w-5xl mx-auto flex items-center justify-between gap-3">
+            <a href="/" class="px-3.5 py-1.5 rounded-xl bg-studio-900 border border-gray-700 hover:border-amber-500 text-gray-300 hover:text-white transition flex items-center gap-2 text-xs font-bold">
+                <span>←</span>
+                <span>Ana Sayfa</span>
+            </a>
+
+            <div class="text-xs sm:text-sm font-black text-rose-400 font-mono tracking-wider flex items-center gap-2">
+                <span>📊</span>
+                <span>HIFZ KARNEM & ARALIKLI TEKRAR</span>
+            </div>
+
+            <div class="px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-bold">
+                <span>⭐ ELO: </span>
+                <span id="karne-elo-val" class="font-mono text-white">1350</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ANA ALAN -->
+    <main class="max-w-4xl mx-auto px-4 py-8 flex-1 w-full space-y-6">
+
+        <!-- Hâfızlık Özeti Kartı -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-studio-900/80 border border-white/5 rounded-2xl p-5 space-y-1">
+                <div class="text-xs text-gray-400 font-mono">HÂFIZ ELO DERECESİ</div>
+                <div class="text-2xl font-black text-white" id="stat-elo">1350</div>
+                <div class="text-[11px] text-emerald-400 font-bold" id="stat-tier">Mutavassıt Hâfız</div>
+            </div>
+            <div class="bg-studio-900/80 border border-white/5 rounded-2xl p-5 space-y-1">
+                <div class="text-xs text-gray-400 font-mono">TOPLAM KARŞILAŞMA</div>
+                <div class="text-2xl font-black text-white" id="stat-matches">12</div>
+                <div class="text-[11px] text-gray-400">9 Galibiyet &bull; 3 Mağlubiyet</div>
+            </div>
+            <div class="bg-studio-900/80 border border-white/5 rounded-2xl p-5 space-y-1">
+                <div class="text-xs text-gray-400 font-mono">PEKİŞTİRİLECEK ÂYETLER</div>
+                <div class="text-2xl font-black text-amber-400" id="stat-weak-count">4 Âyet</div>
+                <div class="text-[11px] text-amber-300">Aralıklı Tekrar Önerisi</div>
+            </div>
+        </div>
+
+        <!-- Zayıf ve Takılınan Âyetler (Spaced Repetition) -->
+        <div class="bg-studio-900/90 border border-amber-500/25 rounded-3xl p-6 shadow-xl space-y-4">
+            <div class="flex items-center justify-between border-b border-white/5 pb-3">
+                <div>
+                    <h2 class="text-lg font-black text-white flex items-center gap-2">
+                        <span>🔄</span>
+                        <span>Aralıklı Tekrar & Zayıf Âyet Listesi</span>
+                    </h2>
+                    <p class="text-xs text-gray-400 mt-0.5">
+                        Yarışmalarda takıldığınız veya unutulmaya yüz tutan âyetler algoritma tarafından burada sıralanır.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Âyet Kartları -->
+            <div class="space-y-3" id="weak-ayahs-list">
+                <!-- Dinamik Âyet Listesi -->
+            </div>
+        </div>
+
+        <!-- Tek Kişilik Oyunlarda Yapılan Hatalar Havuzu -->
+        <div class="bg-studio-900/90 border border-rose-500/25 rounded-3xl p-6 shadow-xl space-y-4">
+            <div class="flex items-center justify-between border-b border-white/5 pb-3">
+                <div>
+                    <h2 class="text-lg font-black text-white flex items-center gap-2">
+                        <span>📌</span>
+                        <span>Tek Kişilik Oyunlardaki Hatalı Cevaplarım</span>
+                    </h2>
+                    <p class="text-xs text-gray-400 mt-0.5">
+                        Ezber, âyet tamamlama ve kelime oyunlarında yanlış işaretlediğiniz tüm sorular
+                    </p>
+                </div>
+                <span class="px-2.5 py-1 rounded-lg bg-rose-500/15 text-rose-300 font-mono text-xs font-bold" id="karne-mistakes-badge">0 Hata</span>
+            </div>
+
+            <div class="space-y-3" id="karne-mistakes-list">
+                <!-- Dinamik Hatalar Listesi -->
+            </div>
+        </div>
+
+    </main>
+
+    <audio id="karneAudioPlayer" preload="none"></audio>
+
+    <script>
+        async function loadKarneData() {
+            try {
+                const res = await fetch('/api/gameshow/hifz-karne/Siz%20(Yar%C4%B1%C5%9Fmac%C4%B1)');
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('karne-elo-val').innerText = data.elo || 1350;
+                    document.getElementById('stat-elo').innerText = data.elo || 1350;
+                    document.getElementById('stat-tier').innerText = data.tier || 'Mutavassıt Hâfız';
+                    document.getElementById('stat-matches').innerText = data.total_matches || 12;
+                    document.getElementById('stat-weak-count').innerText = `${(data.weak_ayahs || []).length} Âyet`;
+                    renderWeakAyahs(data.weak_ayahs || []);
+                } else {
+                    renderWeakAyahs(getFallbackWeakAyahs());
+                }
+            } catch (e) {
+                renderWeakAyahs(getFallbackWeakAyahs());
+            }
+        }
+
+        function renderWeakAyahs(list) {
+            const container = document.getElementById('weak-ayahs-list');
+            if (!list || list.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-400 text-xs font-mono">
+                        Harika! Şu an pekiştirilmesi gereken zayıf bir âyet bulunmuyor.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = list.map(item => `
+                <div class="bg-studio-950/60 border border-white/5 rounded-2xl p-4 space-y-2">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="px-2.5 py-0.5 rounded-lg bg-amber-500/15 text-amber-300 font-mono font-bold">
+                            ${item.reference || 'Kevser, 108/2'}
+                        </span>
+                        <span class="text-rose-400 font-mono text-[11px]">
+                            ${item.mistakes || 1} Hata &bull; Tekrar Önerilir
+                        </span>
+                    </div>
+                    <div class="quran-font text-xl text-amber-200">
+                        ${item.arabic || 'فَصَلِّ لِرَبِّكَ وَانْحَرْ'}
+                    </div>
+                    <div class="text-xs text-gray-300 italic">
+                        "${item.translation || 'O hâlde, Rabbin için namaz kıl, kurban kes.'}"
+                    </div>
+                    <div class="pt-1 flex justify-end">
+                        <button onclick="playVerseAudio('${item.audio_url || ''}')" class="px-3 py-1 rounded-xl bg-studio-800 border border-gray-700 hover:border-emerald-500 text-emerald-300 text-xs flex items-center gap-1.5 transition">
+                            <span>🎧</span>
+                            <span>Dinle</span>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function playVerseAudio(url) {
+            if (!url) return;
+            const player = document.getElementById('karneAudioPlayer');
+            player.src = url;
+            player.play().catch(e => console.log(e));
+        }
+
+        function getFallbackWeakAyahs() {
+            return [
+                {
+                    reference: "Kevser, 108/2",
+                    mistakes: 2,
+                    arabic: "فَصَلِّ لِرَبِّكَ وَانْحَرْ",
+                    translation: "O hâlde, Rabbin için namaz kıl, kurban kes.",
+                    audio_url: "https://mirrors.quranicaudio.com/everyayah/Husary_Muallim_128kbps/108002.mp3"
+                },
+                {
+                    reference: "Fil, 105/3",
+                    mistakes: 1,
+                    arabic: "وَأَرْسَلَ عَلَيْهِمْ طَيْرًا أَبَابِيلَ",
+                    translation: "Üzerlerine balçıktan pişirilmiş taşlar atan sürü sürü kuşlar gönderdi.",
+                    audio_url: "https://mirrors.quranicaudio.com/everyayah/Husary_Muallim_128kbps/105003.mp3"
+                }
+            ];
+        }
+
+        async function loadMistakesData() {
+            let mistakes = [];
+            try {
+                const res = await fetch('/api/gameshow/mistakes/list?player_name=Siz%20(Yar%C4%B1%C5%9Fmac%C4%B1)&limit=50');
+                if (res.ok) {
+                    const data = await res.json();
+                    mistakes = data.mistakes || [];
+                }
+            } catch (e) {}
+
+            if (mistakes.length === 0) {
+                mistakes = JSON.parse(localStorage.getItem('zakirun_mistakes_log') || '[]');
+            }
+
+            const badge = document.getElementById('karne-mistakes-badge');
+            if (badge) badge.innerText = `${mistakes.length} Hata`;
+
+            const container = document.getElementById('karne-mistakes-list');
+            if (!container) return;
+
+            if (mistakes.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-400 text-xs font-mono">
+                        Tebrikler! Şu ana kadar kaydedilmiş bir hatalı cevabınız bulunmuyor.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = mistakes.map(m => {
+                const timeStr = m.created_at ? new Date(m.created_at * 1000).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : (m.date_str || '');
+                return `
+                    <div class="bg-studio-950/60 border border-white/5 rounded-2xl p-4 space-y-2">
+                        <div class="flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded-lg bg-rose-500/20 text-rose-300 font-bold text-[10px]">
+                                    ${m.game_name || 'Oyun'}
+                                </span>
+                                <span class="text-gray-400 font-mono text-[11px]">${m.reference || ''}</span>
+                            </div>
+                            <span class="text-gray-500 text-[10px] font-mono">${timeStr}</span>
+                        </div>
+                        ${m.full_ayah_text ? `
+                            <div class="quran-font text-lg text-amber-100/90" dir="rtl">
+                                ${m.full_ayah_text}
+                            </div>
+                        ` : ''}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1 border-t border-white/5">
+                            <div class="p-2 rounded-xl bg-emerald-950/30 border border-emerald-500/20 text-emerald-300">
+                                <span class="text-[10px] text-emerald-400 block font-bold">DOĞRU CEVAP:</span>
+                                <span class="font-bold text-sm" dir="rtl">${m.target_text || '-'}</span>
+                            </div>
+                            <div class="p-2 rounded-xl bg-rose-950/30 border border-rose-500/20 text-rose-300">
+                                <span class="text-[10px] text-rose-400 block font-bold">VERİLEN YANLIŞ CEVAP:</span>
+                                <span class="font-bold text-sm" dir="rtl">${m.selected_wrong_text || '-'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        loadKarneData();
+        loadMistakesData();
+    </script>
+</body>
+</html>

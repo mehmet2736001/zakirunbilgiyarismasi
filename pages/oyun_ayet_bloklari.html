@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Âyet İçi Kelime Blokları // Zakirun Kur'an Oyunları</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        studio: {
+                            950: '#030712',
+                            900: '#0b0f19',
+                            800: '#111827',
+                            gold: '#fbbf24',
+                            amber: '#f59e0b',
+                            crimson: '#ef4444',
+                            emerald: '#10b981',
+                            cyan: '#06b6d4',
+                            violet: '#8b5cf6'
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        amiri: ['ZakirunUthmani', 'Amiri', 'serif'],
+                        inter: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600;700;900&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @font-face {
+            font-family: 'ZakirunUthmani';
+            src: url('/zakirun.com.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        body {
+            background: radial-gradient(circle at 50% 10%, #1e1b4b 0%, #090d16 55%, #030712 100%);
+            color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+        .quran-font {
+            font-family: 'ZakirunUthmani', 'Amiri', serif;
+            direction: rtl;
+            line-height: 2.2;
+            letter-spacing: 0.5px;
+        }
+        .cloze-tile-3d {
+            background: linear-gradient(180deg, #8e24aa 0%, #5c205c 60%, #3a0d3a 100%);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-bottom: 5px solid #2a083b;
+            color: #ffffff;
+            font-weight: 800;
+            padding: 8px 16px;
+            border-radius: 14px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+        }
+        .cloze-tile-3d:hover:not(.used) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(168, 85, 247, 0.4);
+        }
+        .cloze-tile-3d.used {
+            opacity: 0.2;
+            cursor: default;
+            transform: scale(0.92);
+            box-shadow: none;
+        }
+        .verse-blank-slot {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 14px;
+            margin: 2px 4px;
+            border-radius: 12px;
+            border: 2px dashed rgba(245, 158, 11, 0.8);
+            background: rgba(46, 9, 64, 0.65);
+            color: #fde68a;
+            font-weight: bold;
+            transition: all 0.25s ease;
+        }
+        .verse-blank-slot.solved {
+            border-color: #10b981;
+            border-style: solid;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, rgba(6, 95, 70, 0.5) 100%);
+            color: #6ee7b7;
+        }
+    </style>
+</head>
+<body class="selection:bg-amber-500 selection:text-black flex flex-col min-h-screen">
+
+    <!-- TOP BAR -->
+    <header class="border-b border-white/5 bg-studio-950/80 backdrop-blur-md sticky top-0 z-50 px-4 py-3">
+        <div class="max-w-5xl mx-auto flex items-center justify-between gap-3">
+            <a href="/" class="px-3.5 py-1.5 rounded-xl bg-studio-900 border border-gray-700 hover:border-amber-500 text-gray-300 hover:text-white transition flex items-center gap-2 text-xs font-bold">
+                <span>←</span>
+                <span>Ana Sayfa</span>
+            </a>
+
+            <div class="flex items-center gap-2 bg-studio-900/90 p-1 rounded-2xl border border-gray-800">
+                <button onclick="setBlocksMode('solo')" id="b-btn-mode-solo" class="py-1 px-3.5 rounded-xl font-black text-xs transition flex items-center gap-1.5 bg-gradient-to-r from-yellow-500 to-amber-600 text-black shadow-md">
+                    <span>👤</span>
+                    <span>Tek Kişilik</span>
+                </button>
+                <button onclick="setBlocksMode('duel')" id="b-btn-mode-duel" class="py-1 px-3.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 text-gray-400 hover:text-white">
+                    <span>⚔️</span>
+                    <span>1v1 Düello</span>
+                </button>
+            </div>
+
+            <div class="flex items-center space-x-2 text-xs">
+                <div class="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono font-black" id="blocks-hud-score">
+                    0 / 100 Puan
+                </div>
+                <button onclick="toggleAudio()" id="sfxBtn" class="px-2.5 py-1.5 rounded-xl bg-studio-900 border border-gray-700 hover:border-amber-500 text-gray-300 text-xs">
+                    <span id="sfxIcon">🔊</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- OYUN ALANI -->
+    <main class="max-w-3xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
+
+        <!-- 1v1 Düello Göstergesi -->
+        <div id="b-duel-card" class="hidden bg-gradient-to-r from-studio-900 via-indigo-950/40 to-studio-900 border border-amber-500/30 rounded-2xl p-3.5 shadow-lg">
+            <div class="flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">👤</span>
+                    <div>
+                        <div class="font-black text-white">Siz</div>
+                        <div class="text-[10px] text-emerald-400">Blokları Diziyor...</div>
+                    </div>
+                </div>
+                <div class="px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 font-black text-amber-400 font-mono text-xs">
+                    VS
+                </div>
+                <div class="flex items-center gap-2 text-right">
+                    <div>
+                        <div class="font-black text-white" id="b-bot-name">Tarık B.</div>
+                        <div class="text-[10px] text-amber-400" id="b-bot-status">İnceliyor...</div>
+                    </div>
+                    <span class="text-xl" id="b-bot-avatar">👨‍🎓</span>
+                </div>
+            </div>
+            <div class="mt-2 text-center text-[11px] font-mono text-gray-400" id="b-duel-ticker">
+                ⚡ Blokları doğru sırayla yerleştirerek âyet meâlini tamamlayın!
+            </div>
+        </div>
+
+        <!-- Meâl & Boşluk Alanı -->
+        <div class="bg-studio-900/90 border border-amber-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-white/5 pb-3">
+                <span class="px-3 py-1 rounded-lg bg-amber-500/15 text-amber-300 font-mono text-xs font-bold" id="b-verse-ref">
+                    📖 KÂFİRÛN, 109/1-3
+                </span>
+                <span class="text-xs text-gray-400 font-mono" id="b-round-indicator">Seviye 1 / 5</span>
+            </div>
+
+            <!-- Arapça Metin -->
+            <div class="quran-font text-2xl sm:text-3xl text-amber-200 text-center py-2" id="b-ayah-arabic">
+                قُلْ يَا أَيُّهَا الْكَافِرُونَ
+            </div>
+
+            <!-- Meâl ve Boşluklar -->
+            <div class="text-base sm:text-lg text-gray-200 leading-relaxed text-center sm:text-left py-2" id="b-cloze-container">
+                <!-- Dinamik Meâl Cümlesi ve Boşluk Slotları -->
+            </div>
+        </div>
+
+        <!-- 3D Mor Kelime Blokları Havuzu -->
+        <div class="bg-studio-900/60 border border-white/5 rounded-2xl p-5 space-y-3">
+            <div class="text-xs font-mono text-gray-400 text-center">
+                Uygun kelime bloklarına tıklayarak boşlukları tamamlayın:
+            </div>
+            <div class="flex items-center justify-center gap-3 flex-wrap" id="b-tiles-pool">
+                <!-- Dinamik 3D Mor Bloklar -->
+            </div>
+        </div>
+
+        <!-- Kontroller -->
+        <div class="flex items-center justify-center gap-3">
+            <button onclick="resetBlocksRound()" class="px-4 py-2.5 rounded-xl bg-studio-900 border border-gray-700 hover:border-amber-500 text-gray-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5">
+                <span>🧹</span>
+                <span>Sıfırla</span>
+            </button>
+            <button onclick="nextBlocksRound()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 text-black text-xs font-black shadow-lg hover:scale-105 active:scale-95 transition flex items-center gap-1.5">
+                <span>Sonraki Seviye</span>
+                <span>➔</span>
+            </button>
+        </div>
+
+        <!-- Seviye Tamamlama Kartı -->
+        <div id="b-complete-box" class="hidden bg-gradient-to-b from-studio-900 to-studio-950 border-2 border-emerald-500/40 rounded-3xl p-6 text-center space-y-4 shadow-2xl">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold">
+                <span>✓</span>
+                <span>ÂYET MEÂLİ BAŞARIYLA TAMAMLANDI (+20 PUAN)</span>
+            </div>
+            <div class="text-sm sm:text-base text-gray-300 italic" id="b-complete-translation">
+                "De ki: Ey inkârcılar! Ben sizin taptıklarınıza tapmam..."
+            </div>
+            <div class="pt-2 flex items-center justify-center gap-3">
+                <button onclick="playBlocksAudio()" id="b-audio-btn" class="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg flex items-center gap-2 transition">
+                    <span>🎧</span>
+                    <span>Âyet Tilâveti (Husary)</span>
+                </button>
+                <button onclick="nextBlocksRound()" class="px-5 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs shadow-lg flex items-center gap-2 transition">
+                    <span>Devam Et</span>
+                    <span>→</span>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <audio id="quranAudioPlayer" preload="none"></audio>
+
+    <script>
+        let blockRounds = [];
+        let currentBlockIndex = 0;
+        let currentBlockRound = null;
+        let blocksMode = 'solo';
+        let blocksScore = 0;
+        let isBlocksCompleted = false;
+
+        let filledSlots = [];
+        let availableTiles = [];
+
+        // Ses Efektleri
+        let sfxEnabled = localStorage.getItem('zakirun_sfx') !== '0';
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) audioCtx = new AudioCtx();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            return audioCtx;
+        }
+
+        function playTone(freq, type = 'sine', duration = 0.1, gainVal = 0.15) {
+            if (!sfxEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playCorrectSound() {
+            playTone(523.25, 'triangle', 0.12, 0.2);
+            setTimeout(() => playTone(659.25, 'triangle', 0.15, 0.2), 100);
+            setTimeout(() => playTone(783.99, 'triangle', 0.25, 0.2), 220);
+            if (typeof confetti === 'function') confetti({ particleCount: 35, spread: 60, origin: { y: 0.7 } });
+        }
+
+                function recordMistake(data) {
+            try {
+                const mistakes = JSON.parse(localStorage.getItem('zakirun_mistakes_log') || '[]');
+                const entry = {
+                    id: 'mstk-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+                    player_name: 'Siz (Yarışmacı)',
+                    game_name: data.game_name || "Kur'an Kelime Oyunu",
+                    game_id: data.game_id || 'kelime_oyunu',
+                    surah_id: data.surah_id || 0,
+                    sure_name: data.sure_name || 'Kelime Oyunu',
+                    ayah_id: data.ayah_id || 0,
+                    reference: data.reference || 'Kelime Oyunu',
+                    question_type: data.question_type || 'Kelime Tahmini',
+                    target_text: data.target_text || '',
+                    selected_wrong_text: data.selected_wrong_text || '',
+                    full_ayah_text: data.full_ayah_text || '',
+                    timestamp: Date.now(),
+                    date_str: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+                };
+                mistakes.unshift(entry);
+                localStorage.setItem('zakirun_mistakes_log', JSON.stringify(mistakes));
+                fetch('/api/gameshow/mistakes/record', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(entry)
+                }).catch(() => {});
+            } catch(e) {}
+        }
+
+        function playWrongSound() {
+            playTone(280, 'sawtooth', 0.15, 0.2);
+            setTimeout(() => playTone(220, 'sawtooth', 0.25, 0.2), 120);
+        }
+
+        function toggleAudio() {
+            sfxEnabled = !sfxEnabled;
+            localStorage.setItem('zakirun_sfx', sfxEnabled ? '1' : '0');
+            document.getElementById('sfxIcon').innerText = sfxEnabled ? '🔊' : '🔇';
+        }
+
+        async function initBlocksGame() {
+            document.getElementById('sfxIcon').innerText = sfxEnabled ? '🔊' : '🔇';
+            try {
+                const res = await fetch('/api/gameshow/cloze-blocks/rounds?count=5');
+                const data = await res.json();
+                blockRounds = data.rounds || [];
+                currentBlockIndex = 0;
+                blocksScore = 0;
+                presentBlocksRound();
+            } catch (e) {
+                console.error('Blocks fetch error:', e);
+            }
+        }
+
+        function setBlocksMode(mode) {
+            blocksMode = mode;
+            const btnSolo = document.getElementById('b-btn-mode-solo');
+            const btnDuel = document.getElementById('b-btn-mode-duel');
+            const duelCard = document.getElementById('b-duel-card');
+
+            if (mode === 'solo') {
+                btnSolo.className = 'py-1 px-3.5 rounded-xl font-black text-xs transition flex items-center gap-1.5 bg-gradient-to-r from-yellow-500 to-amber-600 text-black shadow-md';
+                btnDuel.className = 'py-1 px-3.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 text-gray-400 hover:text-white';
+                duelCard.classList.add('hidden');
+            } else {
+                btnDuel.className = 'py-1 px-3.5 rounded-xl font-black text-xs transition flex items-center gap-1.5 bg-gradient-to-r from-yellow-500 to-amber-600 text-black shadow-md';
+                btnSolo.className = 'py-1 px-3.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 text-gray-400 hover:text-white';
+                duelCard.classList.remove('hidden');
+            }
+        }
+
+        function presentBlocksRound() {
+            if (!blockRounds || blockRounds.length === 0) return;
+            isBlocksCompleted = false;
+            currentBlockRound = blockRounds[currentBlockIndex];
+
+            document.getElementById('b-verse-ref').innerText = currentBlockRound.reference;
+            document.getElementById('b-round-indicator').innerText = `Seviye ${currentBlockIndex + 1} / ${blockRounds.length}`;
+            document.getElementById('blocks-hud-score').innerText = `${blocksScore} / 100 Puan`;
+            document.getElementById('b-ayah-arabic').innerText = currentBlockRound.full_ayah_arabic || '';
+
+            document.getElementById('b-complete-box').classList.add('hidden');
+
+            filledSlots = currentBlockRound.blanks.map(b => ({ id: b.index, word: '', correct: b.target_word }));
+            availableTiles = (currentBlockRound.tiles_pool || []).map((w, idx) => ({ id: idx, word: w, isUsed: false }));
+
+            renderClozeSentence();
+            renderTilesPool();
+        }
+
+        function renderClozeSentence() {
+            const container = document.getElementById('b-cloze-container');
+            let template = currentBlockRound.sentence_template;
+
+            filledSlots.forEach((slot, idx) => {
+                const placeholder = `{BLANK_${idx}}`;
+                const content = slot.word 
+                    ? `<span class="verse-blank-slot solved" onclick="unfillSlot(${idx})">${slot.word}</span>`
+                    : `<span class="verse-blank-slot" onclick="unfillSlot(${idx})">[ ... ]</span>`;
+                template = template.replace(placeholder, content);
+            });
+
+            container.innerHTML = template;
+        }
+
+        function renderTilesPool() {
+            const container = document.getElementById('b-tiles-pool');
+            container.innerHTML = availableTiles.map(tile => `
+                <div class="cloze-tile-3d ${tile.isUsed ? 'used' : ''}" onclick="clickTile(${tile.id})">
+                    ${tile.word}
+                </div>
+            `).join('');
+        }
+
+        function clickTile(tileId) {
+            if (isBlocksCompleted) return;
+            const tile = availableTiles.find(t => t.id === tileId);
+            if (!tile || tile.isUsed) return;
+
+            const emptySlot = filledSlots.find(s => !s.word);
+            if (!emptySlot) return;
+
+            tile.isUsed = true;
+            emptySlot.word = tile.word;
+            emptySlot.tileId = tile.id;
+            playTone(600, 'sine', 0.05, 0.15);
+
+            renderClozeSentence();
+            renderTilesPool();
+            checkAllSlots();
+        }
+
+        function unfillSlot(slotIdx) {
+            if (isBlocksCompleted) return;
+            const slot = filledSlots[slotIdx];
+            if (!slot || !slot.word) return;
+
+            const tile = availableTiles.find(t => t.id === slot.tileId);
+            if (tile) tile.isUsed = false;
+
+            slot.word = '';
+            slot.tileId = null;
+            playTone(400, 'sine', 0.05, 0.1);
+
+            renderClozeSentence();
+            renderTilesPool();
+        }
+
+        function resetBlocksRound() {
+            if (isBlocksCompleted) return;
+            filledSlots.forEach(s => {
+                s.word = '';
+                s.tileId = null;
+            });
+            availableTiles.forEach(t => t.isUsed = false);
+            renderClozeSentence();
+            renderTilesPool();
+        }
+
+        function checkAllSlots() {
+            const allFilled = filledSlots.every(s => s.word);
+            if (!allFilled) return;
+
+            const isAllCorrect = filledSlots.every(s => s.word.toLowerCase() === s.correct.toLowerCase());
+            if (isAllCorrect) {
+                isBlocksCompleted = true;
+                blocksScore = Math.min(100, blocksScore + 20);
+                document.getElementById('blocks-hud-score').innerText = `${blocksScore} / 100 Puan`;
+                playCorrectSound();
+
+                document.getElementById('b-complete-translation').innerText = `"${currentBlockRound.full_translation}"`;
+                document.getElementById('b-complete-box').classList.remove('hidden');
+
+                const player = document.getElementById('quranAudioPlayer');
+                if (player && currentBlockRound.audio_url) {
+                    player.src = currentBlockRound.audio_url;
+                    player.play().catch(e => console.log('Audio autoplay prevented:', e));
+                }
+            } else {
+                playWrongSound();
+                if (blocksMode !== 'duel' && currentBlockRound) {
+                    recordMistake({
+                        game_name: "Âyet Blokları Oyunu",
+                        game_id: "ayet_bloklari",
+                        surah_id: currentBlockRound.surah_id || 0,
+                        sure_name: currentBlockRound.sure_name || "Âyet Blokları",
+                        ayah_id: currentBlockRound.ayah_id || 0,
+                        reference: currentBlockRound.reference || `Âyet Blokları (Tur ${currentBlockIndex + 1})`,
+                        question_type: "Âyet Kelime Kulesi",
+                        target_text: currentBlockRound.target_words ? currentBlockRound.target_words.join(' ') : "",
+                        selected_wrong_text: "Yanlış Blok Sıralaması",
+                        full_ayah_text: currentBlockRound.full_translation || ""
+                    });
+                }
+                setTimeout(() => {
+                    resetBlocksRound();
+                }, 700);
+            }
+        }
+
+        function playBlocksAudio() {
+            const player = document.getElementById('quranAudioPlayer');
+            const btn = document.getElementById('b-audio-btn');
+            if (!player || !player.src) return;
+            if (player.paused) {
+                player.play().then(() => btn.innerHTML = `<span>⏸</span><span>Durdur</span>`);
+            } else {
+                player.pause();
+                btn.innerHTML = `<span>🎧</span><span>Âyet Tilâveti (Husary)</span>`;
+            }
+        }
+
+        function nextBlocksRound() {
+            const player = document.getElementById('quranAudioPlayer');
+            if (player) player.pause();
+
+            if (currentBlockIndex < blockRounds.length - 1) {
+                currentBlockIndex++;
+                presentBlocksRound();
+            } else {
+                alert(`🏁 Tebrikler! Tüm seviyeleri tamamladınız.\nToplam Puanınız: ${blocksScore} / 100 Puan`);
+                window.location.href = '/';
+            }
+        }
+
+        initBlocksGame();
+    </script>
+</body>
+</html>

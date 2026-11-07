@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hesap & Ayarlar Merkezi // Zakirun Kur'an TV 2026</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        studio: {
+                            950: '#030712',
+                            900: '#0b0f19',
+                            850: '#0f172a',
+                            800: '#111827',
+                            gold: '#fbbf24',
+                            amber: '#f59e0b',
+                            crimson: '#ef4444',
+                            emerald: '#10b981',
+                            cyan: '#06b6d4',
+                            indigo: '#6366f1'
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        amiri: ['ZakirunUthmani', 'Amiri', 'serif'],
+                        inter: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;600;700;900&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <!-- Supabase JS Client v2 & Zakirun Entegrasyonu -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/supabase_client.js"></script>
+
+    <style>
+        @font-face {
+            font-family: 'ZakirunUthmani';
+            src: url('/zakirun.com.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        body {
+            background: radial-gradient(circle at 50% 5%, #1e1b4b 0%, #090d16 45%, #030712 100%);
+            color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+        .quran-font {
+            font-family: 'ZakirunUthmani', 'Amiri', serif;
+            direction: rtl;
+        }
+        .glow-amber {
+            box-shadow: 0 0 35px -5px rgba(245, 158, 11, 0.35);
+        }
+        .glow-google {
+            box-shadow: 0 0 25px -5px rgba(66, 133, 244, 0.3);
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #000;
+            font-weight: 800;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+        }
+        .avatar-preset-btn.selected {
+            border-color: #f59e0b;
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+            transform: scale(1.08);
+        }
+    </style>
+</head>
+<body class="selection:bg-amber-500 selection:text-black flex flex-col justify-between min-h-screen">
+
+    <!-- ÜST NAVİGASYON -->
+    <header class="p-4 sm:p-6 flex items-center justify-between max-w-6xl mx-auto w-full">
+        <a href="/" class="px-4 py-2 rounded-2xl bg-studio-900/80 border border-white/10 hover:border-amber-400 text-gray-300 hover:text-white transition flex items-center gap-2 text-xs font-bold backdrop-blur-md shadow-md">
+            <span>←</span>
+            <span>Ana Sayfa</span>
+        </a>
+
+        <div class="flex items-center gap-3">
+            <a href="/karne" class="px-3.5 py-1.5 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5">
+                <span>⭐</span>
+                <span class="hidden sm:inline">Hıfz Karnem</span>
+            </a>
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-amber-400 font-mono hidden md:inline">ZAKİRUN HÂFIZLIK // 2026</span>
+                <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ANA GÖVDE: ÇİFT MODLU PANEL -->
+    <main class="flex-1 flex items-center justify-center px-4 py-6">
+
+        <!-- 1. MOD: GİRİŞ YAPMIŞ KULLANICI İÇİN HESAP & AYARLAR MERKEZİ -->
+        <div id="panel-user-settings" class="hidden max-w-2xl w-full bg-studio-900/95 border border-amber-500/30 rounded-3xl p-6 sm:p-8 backdrop-blur-2xl shadow-2xl glow-amber relative overflow-hidden space-y-6">
+            
+            <!-- Arka Plan Dekoratif Işıklar -->
+            <div class="absolute -top-24 -right-24 w-52 h-52 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-24 -left-24 w-52 h-52 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+            <!-- ÜST KULLANICI KİMLİK KARTI -->
+            <div class="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-studio-950/80 border border-white/10 shadow-lg">
+                <div class="flex items-center gap-4 text-center sm:text-left">
+                    <div class="relative group cursor-pointer" onclick="switchSettingsTab('profile')" title="Avatarı Değiştir">
+                        <img id="user-settings-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Hafiz" alt="Avatar" class="w-16 h-16 rounded-2xl border-2 border-amber-400/80 shadow-md object-cover bg-amber-500/20 group-hover:scale-105 transition">
+                        <span class="absolute -bottom-1 -right-1 bg-amber-500 text-black p-1 rounded-full text-[10px] font-black shadow">✏️</span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2 justify-center sm:justify-start">
+                            <h2 id="user-settings-display-name" class="text-base sm:text-lg font-black text-white">Hâfız Kullanıcı</h2>
+                            <span id="user-settings-provider-badge" class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">Google</span>
+                        </div>
+                        <div id="user-settings-display-email" class="text-xs text-gray-400 font-mono mt-0.5">kullanici@gmail.com</div>
+                        <div class="flex items-center gap-2 mt-2 justify-center sm:justify-start">
+                            <span id="user-settings-tier-badge" class="px-2.5 py-0.5 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[11px] font-bold">Mutavassıt (Orta)</span>
+                            <span class="px-2.5 py-0.5 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[11px] font-bold font-mono">⭐ <span id="user-settings-elo-val">1350</span> ELO</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="switchToGuestAuthView()" class="px-3.5 py-2 rounded-xl bg-studio-800 hover:bg-studio-700 text-gray-300 hover:text-white text-xs font-bold transition border border-white/10" title="Başka hesapla oturum aç">
+                        🔄 Hesap Değiştir
+                    </button>
+                    <button type="button" onclick="handleDashboardLogout()" class="px-3.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 text-xs font-bold transition border border-rose-500/30" title="Oturumu Kapat">
+                        🚪 Çıkış
+                    </button>
+                </div>
+            </div>
+
+            <!-- 4 ANA SEKME BAŞLIKLARI -->
+            <div class="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-2 bg-studio-950 p-1.5 rounded-2xl border border-white/10 text-xs">
+                <button type="button" onclick="switchSettingsTab('profile')" id="stab-profile" class="tab-btn active py-2.5 px-3 rounded-xl text-center font-bold transition flex items-center justify-center gap-1.5">
+                    <span>👤</span>
+                    <span>Profilim</span>
+                </button>
+                <button type="button" onclick="switchSettingsTab('app')" id="stab-app" class="tab-btn py-2.5 px-3 rounded-xl text-center text-gray-400 hover:text-white font-bold transition flex items-center justify-center gap-1.5">
+                    <span>⚙️</span>
+                    <span>Ayarlar</span>
+                </button>
+                <button type="button" onclick="switchSettingsTab('security')" id="stab-security" class="tab-btn py-2.5 px-3 rounded-xl text-center text-gray-400 hover:text-white font-bold transition flex items-center justify-center gap-1.5">
+                    <span>🔒</span>
+                    <span>Güvenlik</span>
+                </button>
+                <button type="button" onclick="switchSettingsTab('hifz')" id="stab-hifz" class="tab-btn py-2.5 px-3 rounded-xl text-center text-gray-400 hover:text-white font-bold transition flex items-center justify-center gap-1.5">
+                    <span>📊</span>
+                    <span>Hıfz Karnem</span>
+                </button>
+            </div>
+
+            <!-- İÇERİK 1: 👤 PROFİLİM -->
+            <div id="content-tab-profile" class="settings-tab-content space-y-4 relative z-10">
+                <div>
+                    <label class="block text-xs font-bold text-gray-300 mb-1.5">Görünen Ad Soyad / Hâfız Mahlası</label>
+                    <input type="text" id="input-prof-name" class="w-full px-4 py-2.5 rounded-xl bg-studio-950 border border-white/15 focus:border-amber-400 focus:outline-none text-white text-xs sm:text-sm transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-300 mb-1.5">Hâfızlık Derecesi & İlmi Seviye</label>
+                    <select id="input-prof-tier" class="w-full px-3 py-2.5 rounded-xl bg-studio-950 border border-white/15 focus:border-amber-400 focus:outline-none text-white text-xs cursor-pointer">
+                        <option value="Mübtedî (Başlangıç)">1. Sıfırdan Elifbâ & Harfleri Öğreniyorum (Mübtedî)</option>
+                        <option value="Tecvid Talebesi">2. Tecvid & Mahreç Kurallarını Pekiştiriyorum</option>
+                        <option value="Hâfızlık Hazırlık">3. Hâfızlık Hazırlık (Kısa Sûreler / Cüz Ezberi)</option>
+                        <option value="Mutavassıt (Orta)">4. Mutavassıt Hâfız (10-20 Cüz Hâmili)</option>
+                        <option value="Hâfız-ı Mütkın">5. Hâfız-ı Mütkın (30 Cüz Hâmili Zirve)</option>
+                    </select>
+                </div>
+
+                <!-- Hızlı Avatar Galerisi -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-300 mb-2">Avatar Seçimi (Tıklayarak Belirleyin)</label>
+                    <div class="grid grid-cols-4 sm:grid-cols-8 gap-2" id="avatar-presets-grid"></div>
+                </div>
+
+                <div class="pt-2">
+                    <button type="button" onclick="saveProfileChanges()" class="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black text-xs sm:text-sm tracking-wide transition shadow-lg shadow-amber-500/20 active:scale-95 flex items-center justify-center gap-2">
+                        <span>💾</span>
+                        <span>Profil Bilgilerini Güncelle</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- İÇERİK 2: ⚙️ UYGULAMA AYARLARI -->
+            <div id="content-tab-app" class="settings-tab-content space-y-4 relative z-10 hidden">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-300 mb-1.5">Varsayılan Muallim Kāri (Tilâvet)</label>
+                        <select id="setting-reciter" class="w-full px-3 py-2.5 rounded-xl bg-studio-950 border border-white/15 focus:border-amber-400 focus:outline-none text-white text-xs cursor-pointer">
+                            <option value="husary_muallim">Mahmûd Halîl el-Husarî (Muallim - Önerilen)</option>
+                            <option value="menshawi_muallim">Muhammed Sıddîk el-Minşâvî (Muallim)</option>
+                            <option value="abdulbasit">Abdülbâsit Abdüssamed (Murattal)</option>
+                        </select>
+                        <p class="text-[10px] text-gray-500 mt-1">Yarışmalarda ve ezber oyunlarında âyetleri okuyan muallim kāri.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-300 mb-1.5">Mushaf Yazı Tipi (Arapça Hat)</label>
+                        <select id="setting-font" class="w-full px-3 py-2.5 rounded-xl bg-studio-950 border border-white/15 focus:border-amber-400 focus:outline-none text-white text-xs cursor-pointer">
+                            <option value="zakirun_uthmani">Zakirun Uthmânî 2 (Medine Mushafı Hattı)</option>
+                            <option value="scheherazade">Scheherazade New (Geleneksel Nesih)</option>
+                            <option value="amiri">Amiri (Klasik Arapça)</option>
+                        </select>
+                        <p class="text-[10px] text-gray-500 mt-1">Tüm oyunlardaki âyet ve kelimelerin hat karakteri.</p>
+                    </div>
+                </div>
+
+                <!-- Ses ve Efekt Ayarları -->
+                <div class="p-4 rounded-2xl bg-studio-950/70 border border-white/10 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-xs font-bold text-white">Ses Efektleri & Bildirimler</div>
+                            <div class="text-[10px] text-gray-400">Tıklama, doğru/yanlış sesleri ve tebrik melodileri</div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="setting-sfx" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-studio-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between border-t border-white/5 pt-3">
+                        <div>
+                            <div class="text-xs font-bold text-white">Otomatik Âyet/Soru Çalma</div>
+                            <div class="text-[10px] text-gray-400">Yeni soruya veya harfe odaklanıldığında sesi kendiliğinden başlat</div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="setting-autoplay" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-studio-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                    </div>
+
+                    <div class="border-t border-white/5 pt-3 space-y-1.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-bold text-white">Genel Ses Şiddeti</span>
+                            <span id="label-volume-val" class="font-mono text-amber-400 font-bold">%80</span>
+                        </div>
+                        <input type="range" id="setting-volume" min="0" max="100" value="80" oninput="document.getElementById('label-volume-val').innerText = '%' + this.value" class="w-full h-2 bg-studio-800 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button type="button" onclick="saveAppSettings()" class="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black text-xs sm:text-sm tracking-wide transition shadow-lg shadow-amber-500/20 active:scale-95 flex items-center justify-center gap-2">
+                        <span>⚙️</span>
+                        <span>Uygulama Ayarlarını Kaydet</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- İÇERİK 3: 🔒 GÜVENLİK -->
+            <div id="content-tab-security" class="settings-tab-content space-y-4 relative z-10 hidden">
+                <!-- Şifre Değiştirme -->
+                <div class="p-4 rounded-2xl bg-studio-950/70 border border-white/10 space-y-3">
+                    <div class="text-xs font-bold text-white flex items-center gap-2">
+                        <span>🔑</span>
+                        <span>Şifre Değiştir</span>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-gray-400 mb-1">Yeni Şifre (En az 6 karakter)</label>
+                        <input type="password" id="input-sec-newpass" placeholder="••••••••" class="w-full px-3 py-2 rounded-xl bg-studio-900 border border-white/15 focus:border-amber-400 focus:outline-none text-white text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-gray-400 mb-1">Yeni Şifre Tekrar</label>
+                        <input type="password" id="input-sec-confpass" placeholder="••••••••" class="w-full px-3 py-2 rounded-xl bg-studio-900 border border-white/15 focus:border-amber-400 focus:outline-none text-white text-xs">
+                    </div>
+                    <button type="button" onclick="handleUpdatePassword()" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition shadow-md active:scale-95">
+                        Şifremi Güncelle
+                    </button>
+                </div>
+
+                <!-- Bağlı Hesaplar ve Oturumlar -->
+                <div class="p-4 rounded-2xl bg-studio-950/70 border border-white/10 space-y-3">
+                    <div class="text-xs font-bold text-white flex items-center gap-2">
+                        <span>🌐</span>
+                        <span>Bağlı Hesaplar ve Durum</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs py-2 border-b border-white/5">
+                        <div class="flex items-center gap-2">
+                            <span>🔵</span>
+                            <span class="text-gray-300">Supabase Bulut Kimlik Motoru</span>
+                        </div>
+                        <span class="text-emerald-400 font-bold font-mono">Aktif / Bağlı</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs py-2">
+                        <div class="flex items-center gap-2">
+                            <span>💻</span>
+                            <span class="text-gray-300">Bu Tarayıcı Oturumu</span>
+                        </div>
+                        <span class="text-amber-400 font-bold font-mono">Güvenli</span>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button type="button" onclick="handleDashboardLogout()" class="w-full py-3 rounded-2xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-rose-300 font-black text-xs transition active:scale-95 flex items-center justify-center gap-2">
+                        <span>🚪</span>
+                        <span>Bu Cihazdan Güvenli Çıkış Yap</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- İÇERİK 4: 📊 HIFZ KARNEM ÖZETİ -->
+            <div id="content-tab-hifz" class="settings-tab-content space-y-4 relative z-10 hidden">
+                <div class="grid grid-cols-2 gap-3 text-center">
+                    <div class="p-4 rounded-2xl bg-studio-950/70 border border-amber-500/25 space-y-1">
+                        <div class="text-2xl font-black text-amber-400 font-mono">114</div>
+                        <div class="text-[11px] font-bold text-gray-300">Kur'an Sûresi Havuzu</div>
+                        <div class="text-[10px] text-gray-500">Ezber & Düellolara Açık</div>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-studio-950/70 border border-emerald-500/25 space-y-1">
+                        <div class="text-2xl font-black text-emerald-400 font-mono" id="stat-mistakes-count">0</div>
+                        <div class="text-[11px] font-bold text-gray-300">Kayıtlı Hatalı Cevap</div>
+                        <div class="text-[10px] text-gray-500">Spaced Repetition Takibinde</div>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-studio-950/70 border border-white/10 space-y-3">
+                    <div class="text-xs font-bold text-white">Hıfz İlerleme & Zayıf Âyet Analizi</div>
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Hangi sûrelerde takıldığınızı, kelime hafızanızı ve 30 cüz yetkinlik grafiğinizi müstakil Hıfz Karnesi sayfasından inceleyebilirsiniz.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-2 pt-2">
+                        <a href="/karne" class="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white font-bold text-xs text-center transition shadow-md flex items-center justify-center gap-2">
+                            <span>⭐</span>
+                            <span>Hıfz Karnesine Git</span>
+                        </a>
+                        <button type="button" onclick="clearSettingsMistakes()" class="py-2.5 px-4 rounded-xl bg-studio-800 hover:bg-studio-700 text-gray-300 text-xs font-bold transition border border-white/10">
+                            Hataları Sıfırla
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Genel Bildirim Kutusu -->
+            <div id="settings-alert" class="hidden p-3 rounded-xl text-xs text-center border font-semibold transition"></div>
+        </div>
+
+        <!-- 2. MOD: MİSAFİR GİRİŞ & KAYIT ALANI (Giriş yapılmamışsa veya hesap değiştirmede) -->
+        <div id="panel-guest-auth" class="max-w-md w-full bg-studio-900/90 border border-white/10 rounded-3xl p-6 sm:p-8 backdrop-blur-xl shadow-2xl glow-amber relative overflow-hidden">
+            
+            <!-- Arka Plan Dekoratif Halka -->
+            <div class="absolute -top-20 -right-20 w-44 h-44 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-20 -left-20 w-44 h-44 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <!-- Logo ve Başlık -->
+            <div class="text-center space-y-2 mb-6">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-2xl mx-auto shadow-lg shadow-amber-500/20">
+                    📖
+                </div>
+                <h1 class="text-2xl font-black text-white font-orbitron tracking-wide">
+                    ZAKİRUN HESABI
+                </h1>
+                <p class="text-xs text-gray-400">
+                    Hıfz takibi, canlı düellolar ve sıralamalarınız bulutta senkronize olsun.
+                </p>
+            </div>
+
+            <!-- Sekme Seçimi (Giriş Yap / Kayıt Ol) -->
+            <div class="bg-studio-950 p-1.5 rounded-2xl border border-white/10 flex items-center mb-6 text-xs">
+                <button type="button" onclick="switchTab('login')" id="tab-login" class="tab-btn active flex-1 py-2.5 rounded-xl text-center transition font-bold">
+                    Giriş Yap
+                </button>
+                <button type="button" onclick="switchTab('register')" id="tab-register" class="tab-btn flex-1 py-2.5 rounded-xl text-center text-gray-400 hover:text-white transition font-bold">
+                    Kayıt Ol
+                </button>
+            </div>
+
+            <!-- GOOGLE İLE GİRİŞ YAP BUTONU (ÖNE ÇIKAN) -->
+            <div class="space-y-4 mb-6">
+                <button type="button" onclick="handleGoogleSignIn()" class="w-full py-3 px-4 rounded-2xl bg-white hover:bg-gray-100 text-gray-800 font-bold text-xs sm:text-sm flex items-center justify-center gap-3 transition-all duration-200 transform hover:scale-[1.01] active:scale-95 shadow-md glow-google">
+                    <!-- Google SVG Logo -->
+                    <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                    </svg>
+                    <span id="txt-google-btn">Google ile Hızlı Giriş Yap</span>
+                </button>
+
+                <div class="flex items-center gap-3">
+                    <div class="flex-1 h-px bg-white/10"></div>
+                    <span class="text-[11px] text-gray-500 font-mono uppercase">veya e-posta ile</span>
+                    <div class="flex-1 h-px bg-white/10"></div>
+                </div>
+            </div>
+
+            <!-- GİRİŞ FORMU -->
+            <form id="form-login" onsubmit="handleLocalLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-300 mb-1.5">E-Posta Adresi</label>
+                    <div class="relative">
+                        <input type="email" id="login-email" required placeholder="hafiz@kuran.tv" class="w-full px-4 py-2.5 rounded-xl bg-studio-950 border border-white/15 focus:border-amber-400 focus:outline-none text-white text-xs sm:text-sm placeholder-gray-600 transition">
+                        <span class="absolute right-3.5 top-3 text-gray-500 text-xs">📧</span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-bold text-gray-300">Şifre</label>
+                        <a href="javascript:void(0)" onclick="alert('Şifre sıfırlama bağlantısı e-posta adresinize gönderilecektir.')" class="text-[11px] text-amber-400 hover:underline">Şifremi Unuttum?</a>
+                    </div>
+                    <div class="relative">
+                        <input type="password" id="login-password" required placeholder="••••••••" class="w-full px-4 py-2.5 rounded-xl bg-studio-950 border border-white/15 focus:border-amber-400 focus:outline-none text-white text-xs sm:text-sm placeholder-gray-600 transition">
+                        <button type="button" onclick="togglePasswordVisibility('login-password', this)" class="absolute right-3.5 top-2.5 text-gray-400 hover:text-white text-xs">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between text-xs pt-1">
+                    <label class="flex items-center gap-2 cursor-pointer text-gray-400 hover:text-gray-200">
+                        <input type="checkbox" id="login-remember" checked class="rounded bg-studio-950 border-white/20 text-amber-500 focus:ring-0">
+                        <span>Beni hatırla</span>
+                    </label>
+                </div>
+
+                <button type="submit" id="btn-login-submit" class="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black text-xs sm:text-sm tracking-wide transition shadow-lg shadow-amber-500/20 active:scale-95">
+                    Giriş Yap
+                </button>
+            </form>
+
+            <!-- KAYIT FORMU (VARSAYILAN GİZLİ) -->
+            <form id="form-register" onsubmit="handleLocalRegister(event)" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-bold text-gray-300 mb-1.5">Ad Soyad / Hâfız Mahlası</label>
+                    <input type="text" id="reg-name" required placeholder="Örn: Ahmet Hâfız (Üsküdar)" class="w-full px-4 py-2.5 rounded-xl bg-studio-950 border border-white/15 focus:border-amber-400 focus:outline-none text-white text-xs sm:text-sm placeholder-gray-600 transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-300 mb-1.5">E-Posta Adresi</label>
+                    <input type="email" id="reg-email" required placeholder="ornek@kuran.tv" class="w-full px-4 py-2.5 rounded-xl bg-studio-950 border border-white/15 focus:border-amber-400 focus:outline-none text-white text-xs sm:text-sm placeholder-gray-600 transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-300 mb-1.5">Hâfızlık / İlmi Seviye</label>
+                    <select id="reg-tier" class="w-full px-3 py-2.5 rounded-xl bg-studio-950 border border-white/15 focus:border-amber-400 focus:outline-none text-white text-xs cursor-pointer">
+                        <option value="Mübtedî (Başlangıç)">1. Sıfırdan Elifbâ & Harfleri Öğreniyorum</option>
+                        <option value="Tecvid Talebesi">2. Tecvid & Mahreç Kurallarını Pekiştiriyorum</option>
+                        <option value="Hâfızlık Hazırlık">3. Hâfızlık Hazırlık (Kısa Sûreler / Cüz Ezberi)</option>
+                        <option value="Mutavassıt (Orta)">4. Mutavassıt Hâfız (10-20 Cüz Hâmili)</option>
+                        <option value="Hâfız-ı Mütkın">5. Hâfız-ı Mütkın (30 Cüz Hâmili Zirve)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-300 mb-1.5">Şifre Oluştur</label>
+                    <div class="relative">
+                        <input type="password" id="reg-password" required minlength="6" placeholder="En az 6 karakter" class="w-full px-4 py-2.5 rounded-xl bg-studio-950 border border-white/15 focus:border-amber-400 focus:outline-none text-white text-xs sm:text-sm placeholder-gray-600 transition">
+                        <button type="button" onclick="togglePasswordVisibility('reg-password', this)" class="absolute right-3.5 top-2.5 text-gray-400 hover:text-white text-xs">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" id="btn-reg-submit" class="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-black text-xs sm:text-sm tracking-wide transition shadow-lg shadow-emerald-500/20 active:scale-95">
+                    Kayıt Ol ve Başla
+                </button>
+            </form>
+
+            <!-- Hata / Bildirim Kutusu -->
+            <div id="auth-alert" class="hidden mt-4 p-3 rounded-xl text-xs text-center border font-semibold transition"></div>
+
+        </div>
+    </main>
+
+    <!-- GOOGLE HESAP SEÇİM SİMÜLATÖR & OAUTH MODALI -->
+    <div id="google-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-studio-900 border border-white/20 rounded-3xl p-6 sm:p-7 max-w-sm w-full text-center shadow-2xl relative space-y-4">
+            <div class="w-12 h-12 rounded-2xl bg-white p-2.5 mx-auto shadow-md">
+                <svg viewBox="0 0 24 24" class="w-full h-full">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+            </div>
+            
+            <div>
+                <h3 class="text-base font-bold text-white">Google ile Oturum Aç</h3>
+                <p class="text-xs text-gray-400 mt-0.5">Zakirun Kur'an TV uygulamasına devam et</p>
+            </div>
+
+            <!-- Hızlı Google Hesapları -->
+            <div class="space-y-2 text-left pt-2">
+                <button type="button" onclick="selectGoogleAccount('Ahmet Yılmaz', 'ahmet.hafiz@gmail.com', 'https://api.dicebear.com/7.x/bottts/svg?seed=Ahmet')" class="w-full p-3 rounded-2xl bg-studio-950 border border-white/10 hover:border-amber-400 flex items-center gap-3 transition">
+                    <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Ahmet" class="w-9 h-9 rounded-full bg-studio-800" alt="Avatar">
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs font-bold text-white truncate">Ahmet Yılmaz</div>
+                        <div class="text-[11px] text-gray-400 truncate">ahmet.hafiz@gmail.com</div>
+                    </div>
+                </button>
+
+                <button type="button" onclick="selectGoogleAccount('Zeynep Kaya', 'zeynep.quran@gmail.com', 'https://api.dicebear.com/7.x/bottts/svg?seed=Zeynep')" class="w-full p-3 rounded-2xl bg-studio-950 border border-white/10 hover:border-amber-400 flex items-center gap-3 transition">
+                    <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Zeynep" class="w-9 h-9 rounded-full bg-studio-800" alt="Avatar">
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs font-bold text-white truncate">Zeynep Kaya</div>
+                        <div class="text-[11px] text-gray-400 truncate">zeynep.quran@gmail.com</div>
+                    </div>
+                </button>
+
+                <div class="pt-2">
+                    <input type="text" id="custom-google-name" placeholder="Veya kendi adınızı yazın..." class="w-full px-3 py-2 rounded-xl bg-studio-950 border border-white/15 text-xs text-white placeholder-gray-500 mb-2">
+                    <button type="button" onclick="loginWithCustomGoogle()" class="w-full py-2 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400 transition">
+                        Bu İsimle Google Girişi Yap
+                    </button>
+                </div>
+            </div>
+
+            <div class="pt-2">
+                <button type="button" onclick="closeGoogleModal()" class="text-xs text-gray-400 hover:text-white transition">
+                    Vazgeç
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ALT BİLGİ -->
+    <footer class="p-4 text-center text-xs text-gray-500 border-t border-white/5">
+        <div>Zakirun Kur'an TV &bull; Güvenli Bulut Giriş & Ayarlar Portalı &bull; 2026</div>
+    </footer>
+
+    <script>
+        // Ses efekti
+        function playTone(freq, type, duration, gain) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const g = ctx.createGain();
+                osc.type = type || 'sine';
+                osc.frequency.value = freq;
+                g.gain.setValueAtTime(gain || 0.1, ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + (duration || 0.15));
+                osc.connect(g);
+                g.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + (duration || 0.15));
+            } catch(e) {}
+        }
+
+        // =============================================================
+        // ÇİFT MODLU GÖRÜNÜM VE SEKME YÖNETİMİ
+        // =============================================================
+        const AVATAR_SEEDS = ['Ahmet', 'Zeynep', 'Yusuf', 'Meryem', 'Hamza', 'Fatma', 'Ali', 'Hafiz'];
+        let selectedAvatarUrl = '';
+
+        function renderAuthOrDashboard() {
+            const rawUser = localStorage.getItem('zakirun_user');
+            const guestPanel = document.getElementById('panel-guest-auth');
+            const settingsPanel = document.getElementById('panel-user-settings');
+
+            if (rawUser) {
+                try {
+                    const user = JSON.parse(rawUser);
+                    guestPanel.classList.add('hidden');
+                    settingsPanel.classList.remove('hidden');
+                    loadUserSettingsData(user);
+                    return;
+                } catch(e) {}
+            }
+
+            // Misafir modu
+            guestPanel.classList.remove('hidden');
+            settingsPanel.classList.add('hidden');
+        }
+
+        function switchToGuestAuthView() {
+            document.getElementById('panel-user-settings').classList.add('hidden');
+            document.getElementById('panel-guest-auth').classList.remove('hidden');
+            showSettingsAlert("Başka bir hesapla giriş yapmak için formu kullanabilirsiniz.", true);
+        }
+
+        function loadUserSettingsData(user) {
+            // Üst kimlik kartı
+            document.getElementById('user-settings-display-name').innerText = user.name || 'Hâfız Kullanıcı';
+            document.getElementById('user-settings-display-email').innerText = user.email || 'E-posta belirtilmemiş';
+            document.getElementById('user-settings-tier-badge').innerText = user.hifz_tier || 'Mutavassıt (Orta)';
+            document.getElementById('user-settings-elo-val').innerText = user.elo || 1350;
+
+            const providerBadge = document.getElementById('user-settings-provider-badge');
+            if (user.provider === 'google') {
+                providerBadge.innerText = 'Google Hesabı';
+                providerBadge.className = 'px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10px] font-bold';
+            } else {
+                providerBadge.innerText = 'Supabase Hesabı';
+                providerBadge.className = 'px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold';
+            }
+
+            selectedAvatarUrl = user.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(user.name || 'Hafiz')}`;
+            document.getElementById('user-settings-avatar').src = selectedAvatarUrl;
+
+            // Profil formu
+            document.getElementById('input-prof-name').value = user.name || '';
+            const tierSelect = document.getElementById('input-prof-tier');
+            if (user.hifz_tier) {
+                for (let opt of tierSelect.options) {
+                    if (opt.value === user.hifz_tier || opt.text.includes(user.hifz_tier)) {
+                        tierSelect.value = opt.value;
+                        break;
+                    }
+                }
+            }
+
+            // Avatar galerisini oluştur
+            renderAvatarPresets(selectedAvatarUrl);
+
+            // Uygulama Ayarlarını yükle
+            loadAppSettingsToUI();
+
+            // Hatalı cevap sayısını yükle
+            try {
+                const mistakes = JSON.parse(localStorage.getItem('zakirun_mistakes_log') || '[]');
+                document.getElementById('stat-mistakes-count').innerText = mistakes.length;
+            } catch(e) {
+                document.getElementById('stat-mistakes-count').innerText = '0';
+            }
+        }
+
+        function renderAvatarPresets(currentAvatar) {
+            const grid = document.getElementById('avatar-presets-grid');
+            grid.innerHTML = AVATAR_SEEDS.map(seed => {
+                const url = `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}`;
+                const isSel = currentAvatar.includes(seed);
+                return `
+                    <button type="button" onclick="selectPresetAvatar('${url}')" class="avatar-preset-btn p-1 rounded-xl bg-studio-950 border border-white/10 hover:border-amber-400 transition flex items-center justify-center ${isSel ? 'selected' : ''}">
+                        <img src="${url}" alt="${seed}" class="w-8 h-8 rounded-lg object-cover">
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function selectPresetAvatar(url) {
+            playTone(750, 'sine', 0.08, 0.15);
+            selectedAvatarUrl = url;
+            document.getElementById('user-settings-avatar').src = url;
+            renderAvatarPresets(url);
+        }
+
+        function switchSettingsTab(tab) {
+            playTone(550, 'triangle', 0.08, 0.15);
+            const tabs = ['profile', 'app', 'security', 'hifz'];
+            tabs.forEach(t => {
+                const btn = document.getElementById('stab-' + t);
+                const content = document.getElementById('content-tab-' + t);
+                if (t === tab) {
+                    btn.className = 'tab-btn active py-2.5 px-3 rounded-xl text-center font-bold transition flex items-center justify-center gap-1.5';
+                    content.classList.remove('hidden');
+                } else {
+                    btn.className = 'tab-btn py-2.5 px-3 rounded-xl text-center text-gray-400 hover:text-white font-bold transition flex items-center justify-center gap-1.5';
+                    content.classList.add('hidden');
+                }
+            });
+            const alertBox = document.getElementById('settings-alert');
+            alertBox.classList.add('hidden');
+        }
+
+        function showSettingsAlert(msg, isSuccess = false) {
+            const b = document.getElementById('settings-alert');
+            b.innerText = msg;
+            b.classList.remove('hidden');
+            if (isSuccess) {
+                b.className = 'p-3 rounded-xl text-xs text-center border font-semibold transition bg-emerald-950/60 border-emerald-500/40 text-emerald-300';
+            } else {
+                b.className = 'p-3 rounded-xl text-xs text-center border font-semibold transition bg-rose-950/60 border-rose-500/40 text-rose-300';
+            }
+        }
+
+        // =============================================================
+        // 1. PROFİL GÜNCELLEME İŞLEMLERİ
+        // =============================================================
+        async function saveProfileChanges() {
+            const name = document.getElementById('input-prof-name').value.trim();
+            const tier = document.getElementById('input-prof-tier').value;
+
+            if (!name) {
+                showSettingsAlert("Lütfen bir isim yazınız.");
+                return;
+            }
+
+            showSettingsAlert("Profiliniz güncelleniyor...", true);
+
+            try {
+                if (window.ZakirunSupabase) {
+                    const updated = await ZakirunSupabase.updateProfile({
+                        name: name,
+                        hifz_tier: tier,
+                        avatar_url: selectedAvatarUrl
+                    });
+                    loadUserSettingsData(updated);
+                    playTone(880, 'triangle', 0.2, 0.25);
+                    if (typeof confetti === 'function') confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+                    showSettingsAlert("Profiliniz başarıyla güncellendi ve senkronize edildi!", true);
+                    return;
+                }
+            } catch(e) {
+                console.warn("Profil güncelleme hatası:", e);
+            }
+
+            // Yerel fallback
+            const current = JSON.parse(localStorage.getItem('zakirun_user') || '{}');
+            const merged = { ...current, name, hifz_tier: tier, avatar_url: selectedAvatarUrl };
+            localStorage.setItem('zakirun_user', JSON.stringify(merged));
+            loadUserSettingsData(merged);
+            showSettingsAlert("Profil yerel olarak güncellendi!", true);
+        }
+
+        // =============================================================
+        // 2. UYGULAMA AYARLARI İŞLEMLERİ
+        // =============================================================
+        function loadAppSettingsToUI() {
+            const s = (window.ZakirunSupabase && ZakirunSupabase.getSettings) 
+                ? ZakirunSupabase.getSettings() 
+                : { reciter: 'husary_muallim', font: 'zakirun_uthmani', soundEffects: true, autoPlayAudio: true, soundVolume: 80 };
+
+            document.getElementById('setting-reciter').value = s.reciter || 'husary_muallim';
+            document.getElementById('setting-font').value = s.font || 'zakirun_uthmani';
+            document.getElementById('setting-sfx').checked = s.soundEffects !== false;
+            document.getElementById('setting-autoplay').checked = s.autoPlayAudio !== false;
+            document.getElementById('setting-volume').value = s.soundVolume || 80;
+            document.getElementById('label-volume-val').innerText = '%' + (s.soundVolume || 80);
+        }
+
+        async function saveAppSettings() {
+            const reciter = document.getElementById('setting-reciter').value;
+            const font = document.getElementById('setting-font').value;
+            const soundEffects = document.getElementById('setting-sfx').checked;
+            const autoPlayAudio = document.getElementById('setting-autoplay').checked;
+            const soundVolume = parseInt(document.getElementById('setting-volume').value, 10);
+
+            const newSettings = { reciter, font, soundEffects, autoPlayAudio, soundVolume };
+
+            if (window.ZakirunSupabase && ZakirunSupabase.saveSettings) {
+                await ZakirunSupabase.saveSettings(newSettings);
+            } else {
+                localStorage.setItem('zakirun_settings', JSON.stringify(newSettings));
+            }
+
+            playTone(880, 'sine', 0.15, 0.2);
+            showSettingsAlert("Uygulama ayarlarınız kaydedildi ve tüm oyunlara uygulandı!", true);
+        }
+
+        // =============================================================
+        // 3. GÜVENLİK & ŞİFRE GÜNCELLEME
+        // =============================================================
+        async function handleUpdatePassword() {
+            const newPass = document.getElementById('input-sec-newpass').value;
+            const confPass = document.getElementById('input-sec-confpass').value;
+
+            if (!newPass || newPass.length < 6) {
+                showSettingsAlert("Şifre en az 6 karakter olmalıdır.");
+                return;
+            }
+            if (newPass !== confPass) {
+                showSettingsAlert("Girdiğiniz yeni şifreler birbiriyle eşleşmiyor.");
+                return;
+            }
+
+            showSettingsAlert("Şifreniz güncelleniyor...", true);
+
+            try {
+                if (window.ZakirunSupabase) {
+                    await ZakirunSupabase.updatePassword(newPass);
+                    playTone(880, 'triangle', 0.2, 0.25);
+                    showSettingsAlert("Şifreniz başarıyla güncellendi!", true);
+                    document.getElementById('input-sec-newpass').value = '';
+                    document.getElementById('input-sec-confpass').value = '';
+                    return;
+                }
+            } catch(e) {
+                showSettingsAlert("Şifre güncelleme hatası: " + (e.message || e));
+            }
+        }
+
+        // =============================================================
+        // 4. HIFZ KARNESİ HATALARI TEMİZLEME
+        // =============================================================
+        function clearSettingsMistakes() {
+            if (confirm("Kayıtlı hatalı cevaplar listenizi sıfırlamak istediğinize emin misiniz?")) {
+                localStorage.removeItem('zakirun_mistakes_log');
+                document.getElementById('stat-mistakes-count').innerText = '0';
+                fetch('/api/gameshow/mistakes/clear', { method: 'POST' }).catch(() => {});
+                showSettingsAlert("Hatalı cevaplar geçmişi temizlendi.", true);
+            }
+        }
+
+        // =============================================================
+        // 5. GÜVENLİ ÇIKIŞ YAP
+        // =============================================================
+        async function handleDashboardLogout() {
+            if (confirm("Oturumu kapatmak istediğinize emin misiniz?")) {
+                if (window.ZakirunSupabase) {
+                    await ZakirunSupabase.signOut();
+                }
+                localStorage.removeItem('zakirun_user');
+                playTone(440, 'sine', 0.1, 0.15);
+                renderAuthOrDashboard();
+                showAlert("Oturum kapatıldı.", true);
+            }
+        }
+
+        // =============================================================
+        // MİSAFİR MODU GİRİŞ & KAYIT KONTROLLERİ
+        // =============================================================
+        function switchTab(tab) {
+            const btnLogin = document.getElementById('tab-login');
+            const btnReg = document.getElementById('tab-register');
+            const formLogin = document.getElementById('form-login');
+            const formReg = document.getElementById('form-register');
+            const txtGoogle = document.getElementById('txt-google-btn');
+            const alertBox = document.getElementById('auth-alert');
+            alertBox.classList.add('hidden');
+
+            playTone(550, 'triangle', 0.08, 0.15);
+
+            if (tab === 'login') {
+                btnLogin.className = 'tab-btn active flex-1 py-2.5 rounded-xl text-center transition font-bold';
+                btnReg.className = 'tab-btn flex-1 py-2.5 rounded-xl text-center text-gray-400 hover:text-white transition font-bold';
+                formLogin.classList.remove('hidden');
+                formReg.classList.add('hidden');
+                txtGoogle.innerText = "Google ile Hızlı Giriş Yap";
+            } else {
+                btnReg.className = 'tab-btn active flex-1 py-2.5 rounded-xl text-center transition font-bold';
+                btnLogin.className = 'tab-btn flex-1 py-2.5 rounded-xl text-center text-gray-400 hover:text-white transition font-bold';
+                formLogin.classList.add('hidden');
+                formReg.classList.remove('hidden');
+                txtGoogle.innerText = "Google ile Tek Tıkla Kayıt Ol";
+            }
+        }
+
+        function togglePasswordVisibility(inputId, btn) {
+            const el = document.getElementById(inputId);
+            if (el.type === 'password') {
+                el.type = 'text';
+                btn.innerText = '🔒';
+            } else {
+                el.type = 'password';
+                btn.innerText = '👁️';
+            }
+        }
+
+        function showAlert(msg, isSuccess = false) {
+            const b = document.getElementById('auth-alert');
+            b.innerText = msg;
+            b.classList.remove('hidden');
+            if (isSuccess) {
+                b.className = 'mt-4 p-3 rounded-xl text-xs text-center border font-semibold transition bg-emerald-950/50 border-emerald-500/40 text-emerald-300';
+            } else {
+                b.className = 'mt-4 p-3 rounded-xl text-xs text-center border font-semibold transition bg-rose-950/50 border-rose-500/40 text-rose-300';
+            }
+        }
+
+        async function handleGoogleSignIn() {
+            playTone(660, 'sine', 0.12, 0.2);
+            showAlert("Supabase ile Google oturumuna bağlanılıyor...", true);
+
+            try {
+                if (window.ZakirunSupabase) {
+                    await ZakirunSupabase.signInWithGoogle();
+                    return;
+                }
+            } catch(err) {
+                console.warn("Supabase Google Auth:", err);
+                showAlert("Google Bağlantısı: " + (err.message || err));
+                document.getElementById('google-modal').classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById('google-modal').classList.remove('hidden');
+        }
+
+        function closeGoogleModal() {
+            document.getElementById('google-modal').classList.add('hidden');
+        }
+
+        async function selectGoogleAccount(name, email, avatar) {
+            closeGoogleModal();
+            const userData = {
+                id: 'google-' + Math.floor(Math.random() * 899999 + 100000),
+                name: name,
+                email: email,
+                avatar_url: avatar,
+                provider: 'google',
+                hifz_tier: 'Mutavassıt (Orta)',
+                elo: 1450,
+                token: 'mock-google-token-' + Date.now()
+            };
+            await completeSuccessfulAuth(userData, "Google ile giriş başarılı!");
+        }
+
+        async function loginWithCustomGoogle() {
+            const name = document.getElementById('custom-google-name').value.trim();
+            if (!name) {
+                alert("Lütfen bir isim yazınız.");
+                return;
+            }
+            const email = name.toLowerCase().replace(/[^a-z0-9]/g, '') + '@gmail.com';
+            const avatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`;
+            await selectGoogleAccount(name, email, avatar);
+        }
+
+        async function handleLocalLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            showAlert("Supabase üzerinden giriş yapılıyor...", true);
+
+            if (window.ZakirunSupabase) {
+                try {
+                    const res = await ZakirunSupabase.signInWithEmail(email, password);
+                    if (res && res.user) {
+                        await completeSuccessfulAuth(res.user, "Giriş başarılı! Hoş geldiniz.");
+                        return;
+                    }
+                } catch(sbErr) {
+                    console.warn("Supabase SignIn:", sbErr);
+                    let msg = sbErr.message || "Giriş hatası";
+                    if (msg === "Invalid login credentials") {
+                        msg = "E-posta veya şifre hatalı.";
+                    } else if (msg.toLowerCase().includes("email not confirmed")) {
+                        msg = "⚠️ E-posta adresiniz henüz onaylanmamış. Lütfen gelen kutunuzdaki doğrulama bağlantısına tıklayınız.";
+                        showAlert(msg);
+                        return;
+                    }
+                    showAlert(msg);
+                    return;
+                }
+            }
+
+            // Backend fallback
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    await completeSuccessfulAuth(data.user, "Giriş başarılı!");
+                } else {
+                    const err = await res.json();
+                    showAlert(err.detail || "E-posta veya şifre hatalı.");
+                }
+            } catch(err) {
+                const fallbackUser = {
+                    id: 'local-' + Date.now(),
+                    name: email.split('@')[0].toUpperCase(),
+                    email: email,
+                    avatar_url: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(email)}`,
+                    provider: 'local',
+                    hifz_tier: 'Mutavassıt (Orta)',
+                    elo: 1350
+                };
+                await completeSuccessfulAuth(fallbackUser, "Giriş başarılı!");
+            }
+        }
+
+        async function handleLocalRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('reg-name').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const password = document.getElementById('reg-password').value;
+            const tier = document.getElementById('reg-tier').value;
+
+            showAlert("Supabase Bulutunda hesabınız oluşturuluyor...", true);
+
+            if (window.ZakirunSupabase) {
+                try {
+                    const res = await ZakirunSupabase.signUpWithEmail(name, email, password, tier);
+                    if (res && res.needsConfirmation) {
+                        showAlert("✨ Kayıt başarılı! E-posta adresinize (" + email + ") bir doğrulama bağlantısı gönderildi. Lütfen gelen kutunuzu kontrol edip onaylayınız.", true);
+                        return;
+                    }
+                    if (res && res.user) {
+                        await completeSuccessfulAuth(res.user, "Hesabınız başarıyla oluşturuldu ve giriş yapıldı!");
+                        return;
+                    }
+                } catch(sbErr) {
+                    console.warn("Supabase SignUp:", sbErr);
+                    showAlert(sbErr.message || "Kayıt sırasında bir hata oluştu.");
+                    return;
+                }
+            }
+
+            // Backend fallback
+            try {
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ name, email, password, hifz_tier: tier })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    await completeSuccessfulAuth(data.user, "Hesabınız başarıyla oluşturuldu!");
+                } else {
+                    const err = await res.json();
+                    showAlert(err.detail || "Kayıt sırasında bir hata oluştu.");
+                }
+            } catch(err) {
+                const fallbackUser = {
+                    id: 'local-' + Date.now(),
+                    name: name,
+                    email: email,
+                    avatar_url: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`,
+                    provider: 'local',
+                    hifz_tier: tier,
+                    elo: 1350
+                };
+                await completeSuccessfulAuth(fallbackUser, "Hesabınız oluşturuldu!");
+            }
+        }
+
+        async function completeSuccessfulAuth(user, successMessage) {
+            playTone(880, 'triangle', 0.2, 0.25);
+            if (typeof confetti === 'function') {
+                confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+            }
+
+            localStorage.setItem('zakirun_user', JSON.stringify(user));
+
+            try {
+                await fetch('/api/auth/sync-session', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(user)
+                });
+            } catch(e) {}
+
+            showAlert((successMessage || "Giriş başarılı!") + " Ana sayfaya yönlendiriliyorsunuz...", true);
+            showSettingsAlert((successMessage || "Giriş başarılı!") + " Ana sayfaya yönlendiriliyorsunuz...", true);
+
+            // Giriş yapıldığında kullanıcı doğrudan uygulama ana sayfasına yönlendirilir
+            setTimeout(() => {
+                const params = new URLSearchParams(window.location.search);
+                const redirect = params.get('redirect') || '/';
+                window.location.href = redirect;
+            }, 1100);
+        }
+
+        // =============================================================
+        // SAYFA YÜKLENDİĞİNDE OTURUM DİNLENMESİ & BAŞLATMA
+        // =============================================================
+        window.addEventListener('DOMContentLoaded', async () => {
+            renderAuthOrDashboard();
+
+            if (window.ZakirunSupabase) {
+                try {
+                    const session = await ZakirunSupabase.getSession();
+                    if (session && session.user && !localStorage.getItem('zakirun_user')) {
+                        const userObj = ZakirunSupabase.formatUser(session.user);
+                        await ZakirunSupabase.syncSessionWithServer(userObj);
+                        renderAuthOrDashboard();
+                        return;
+                    }
+
+                    ZakirunSupabase.onAuthStateChange(async (event, userObj, session) => {
+                        if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && userObj) {
+                            await completeSuccessfulAuth(userObj, `Hoş geldiniz, ${userObj.name}!`);
+                        }
+                    });
+                } catch(e) {
+                    console.warn("Supabase init auth kontrolü:", e);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

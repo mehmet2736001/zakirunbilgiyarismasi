@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kur'an Kelime Oyunu // Zakirun Kur'an Oyunları</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        studio: {
+                            950: '#030712',
+                            900: '#0b0f19',
+                            800: '#111827',
+                            gold: '#fbbf24',
+                            amber: '#f59e0b',
+                            crimson: '#ef4444',
+                            emerald: '#10b981',
+                            cyan: '#06b6d4',
+                            violet: '#8b5cf6'
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        amiri: ['ZakirunUthmani', 'Amiri', 'serif'],
+                        inter: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600;700;900&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @font-face {
+            font-family: 'ZakirunUthmani';
+            src: url('/zakirun.com.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        body {
+            background: radial-gradient(circle at 50% 10%, #1e1b4b 0%, #090d16 55%, #030712 100%);
+            color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+        .quran-font {
+            font-family: 'ZakirunUthmani', 'Amiri', serif;
+            direction: rtl;
+            line-height: 2.2;
+            letter-spacing: 0.5px;
+        }
+        .letter-slot {
+            width: 50px;
+            height: 58px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 2px dashed rgba(245, 158, 11, 0.4);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 900;
+            color: #ffffff;
+            transition: all 0.2s ease;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+        .letter-slot.filled {
+            background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+            border: 2px solid #fef3c7;
+            color: #000000;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }
+        .letter-slot.revealed {
+            background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+            border: 2px solid #a7f3d0;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+        .letter-tile {
+            width: 48px;
+            height: 52px;
+            background: linear-gradient(180deg, #374151 0%, #1f2937 100%);
+            border: 1.5px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 900;
+            color: #ffffff;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+        .letter-tile:hover:not(.used) {
+            transform: translateY(-2px);
+            border-color: #f59e0b;
+            box-shadow: 0 6px 12px rgba(245, 158, 11, 0.3);
+        }
+        .letter-tile.used {
+            opacity: 0.2;
+            cursor: default;
+            transform: scale(0.9);
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body class="selection:bg-amber-500 selection:text-black flex flex-col min-h-screen">
+
+    <!-- TOP BAR: SADECE ANA SAYFA DÖNÜŞ + OYUN BAŞLIĞI + SKOR -->
+    <header class="border-b border-white/5 bg-studio-950/80 backdrop-blur-md sticky top-0 z-50 px-4 py-3">
+        <div class="max-w-5xl mx-auto flex items-center justify-between gap-3">
+            <a href="/" class="px-3.5 py-1.5 rounded-xl bg-studio-900 border border-gray-700 hover:border-amber-500 text-gray-300 hover:text-white transition flex items-center gap-2 text-xs font-bold">
+                <span>←</span>
+                <span>Ana Sayfa</span>
+            </a>
+
+            <div class="flex items-center gap-2 bg-studio-900/90 p-1 rounded-2xl border border-gray-800">
+                <button onclick="setWordMode('solo')" id="w-btn-mode-solo" class="py-1 px-3.5 rounded-xl font-black text-xs transition flex items-center gap-1.5 bg-gradient-to-r from-yellow-500 to-amber-600 text-black shadow-md">
+                    <span>👤</span>
+                    <span>Tek Kişilik</span>
+                </button>
+                <button onclick="setWordMode('duel')" id="w-btn-mode-duel" class="py-1 px-3.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 text-gray-400 hover:text-white">
+                    <span>⚔️</span>
+                    <span>1v1 Düello</span>
+                </button>
+            </div>
+
+            <div class="flex items-center space-x-2 text-xs">
+                <div class="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono font-black" id="word-hud-score">
+                    0 / 100 Puan
+                </div>
+                <button onclick="toggleAudio()" id="sfxBtn" class="px-2.5 py-1.5 rounded-xl bg-studio-900 border border-gray-700 hover:border-amber-500 text-gray-300 text-xs">
+                    <span id="sfxIcon">🔊</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- OYUN ALANI -->
+    <main class="max-w-3xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
+
+        <!-- 1v1 Düello Rakip Göstergesi -->
+        <div id="w-duel-card" class="hidden bg-gradient-to-r from-studio-900 via-indigo-950/40 to-studio-900 border border-amber-500/30 rounded-2xl p-3.5 shadow-lg">
+            <div class="flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">👤</span>
+                    <div>
+                        <div class="font-black text-white">Siz</div>
+                        <div class="text-[10px] text-emerald-400" id="w-player-status">Yazıyor...</div>
+                    </div>
+                </div>
+                <div class="px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 font-black text-amber-400 font-mono text-xs">
+                    VS
+                </div>
+                <div class="flex items-center gap-2 text-right">
+                    <div>
+                        <div class="font-black text-white" id="w-bot-name">Ahmet H.</div>
+                        <div class="text-[10px] text-amber-400" id="w-bot-status">Düşünüyor...</div>
+                    </div>
+                    <span class="text-xl" id="w-bot-avatar">👨‍🎓</span>
+                </div>
+            </div>
+            <div class="mt-2 text-center text-[11px] font-mono text-gray-400" id="w-duel-ticker">
+                ⚡ 1v1 Düello başladı! Hedef kelimeyi rakibinizden önce tamamlayın.
+            </div>
+        </div>
+
+        <!-- Âyet İpucu Kartı -->
+        <div class="bg-studio-900/90 border border-amber-500/30 rounded-3xl p-6 shadow-xl space-y-3">
+            <div class="flex items-center justify-between border-b border-white/5 pb-3">
+                <span class="px-3 py-1 rounded-lg bg-amber-500/15 text-amber-300 font-mono text-xs font-bold" id="w-surah-pill">
+                    📖 Fil Sûresi, 3. Âyet
+                </span>
+                <div class="flex items-center gap-3 text-xs font-mono">
+                    <span class="text-gray-400" id="w-round-indicator">Soru 1 / 5</span>
+                    <span class="text-emerald-400 font-bold" id="w-current-val">20 Puan</span>
+                </div>
+            </div>
+            <div class="text-base sm:text-lg font-bold text-white leading-relaxed pt-1" id="w-clue-text">
+                Yükleniyor...
+            </div>
+        </div>
+
+        <!-- Hedef Kelime Yuvaları (Harf Kutuları) -->
+        <div class="flex items-center justify-center gap-2.5 flex-wrap py-4" id="w-letter-slots">
+            <!-- Dinamik Harf Yuvaları -->
+        </div>
+
+        <!-- Karışık Harf Havuzu -->
+        <div class="bg-studio-900/60 border border-white/5 rounded-2xl p-4">
+            <div class="text-[11px] font-mono text-gray-400 text-center mb-3">
+                Harflere tıklayarak veya klavyeden yazarak boşlukları doldurun:
+            </div>
+            <div class="flex items-center justify-center gap-2 flex-wrap" id="w-letter-tiles">
+                <!-- Dinamik Harf Taşları -->
+            </div>
+        </div>
+
+        <!-- Butonlar (Sadece 3 Buton) -->
+        <div class="flex items-center justify-center gap-3">
+            <button onclick="takeLetterHint()" class="px-4 py-2.5 rounded-xl bg-studio-900 border border-amber-500/40 text-amber-300 hover:bg-amber-500/10 text-xs font-bold transition flex items-center gap-1.5">
+                <span>💡</span>
+                <span>Harf Al (-4 Puan)</span>
+            </button>
+            <button onclick="clearWordGuess()" class="px-4 py-2.5 rounded-xl bg-studio-900 border border-gray-700 hover:border-amber-500 text-gray-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5">
+                <span>🧹</span>
+                <span>Temizle</span>
+            </button>
+            <button onclick="skipWordRound()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 text-black text-xs font-black shadow-lg hover:scale-105 active:scale-95 transition flex items-center gap-1.5">
+                <span>Pas / Sonraki</span>
+                <span>➔</span>
+            </button>
+        </div>
+
+        <!-- Seviye Tamamlama & Âyet Tilâveti Kartı -->
+        <div id="w-verse-complete-box" class="hidden bg-gradient-to-b from-studio-900 to-studio-950 border-2 border-emerald-500/40 rounded-3xl p-6 text-center space-y-4 shadow-2xl">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold">
+                <span>✨</span>
+                <span id="w-complete-msg">KELİME DOĞRU TAHMİN EDİLDİ (+20 PUAN)</span>
+            </div>
+            <div class="quran-font text-2xl sm:text-3xl text-amber-200 leading-loose py-2" id="w-complete-arabic">
+                وَأَرْسَلَ عَلَيْهِمْ طَيْرًا أَبَابِيلَ
+            </div>
+            <div class="text-sm sm:text-base text-gray-300 italic max-w-xl mx-auto" id="w-complete-meal">
+                "Üzerlerine balçıktan pişirilmiş taşlar atan sürü sürü kuşlar gönderdi."
+            </div>
+            <div class="pt-2 flex items-center justify-center gap-3">
+                <button onclick="playWordVerseAudio()" id="w-audio-btn" class="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg flex items-center gap-2 transition">
+                    <span>🎧</span>
+                    <span>Âyet Tilâveti (Husary)</span>
+                </button>
+                <button onclick="nextWordRound()" class="px-5 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs shadow-lg flex items-center gap-2 transition">
+                    <span>Devam Et</span>
+                    <span>→</span>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <audio id="quranAudioPlayer" preload="none"></audio>
+
+    <script>
+        let wordRounds = [];
+        let currentWordIndex = 0;
+        let currentWordRound = null;
+        let wordMode = 'solo'; // 'solo' or 'duel'
+        let wordPlayerScore = 0;
+        let wordRoundPoints = 20;
+        let wordBotScore = 0;
+        let wordDuelBot = null;
+        let wordBotTimers = [];
+        let isWordCompleted = false;
+
+        let userSlots = [];
+        let poolTiles = [];
+
+        // Ses Efektleri
+        let sfxEnabled = localStorage.getItem('zakirun_sfx') !== '0';
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) audioCtx = new AudioCtx();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            return audioCtx;
+        }
+
+        function playTone(freq, type = 'sine', duration = 0.1, gainVal = 0.15) {
+            if (!sfxEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playCorrectSound() {
+            playTone(523.25, 'triangle', 0.12, 0.2);
+            setTimeout(() => playTone(659.25, 'triangle', 0.15, 0.2), 100);
+            setTimeout(() => playTone(783.99, 'triangle', 0.25, 0.2), 220);
+            if (typeof confetti === 'function') confetti({ particleCount: 35, spread: 60, origin: { y: 0.7 } });
+        }
+
+                function recordMistake(data) {
+            try {
+                const mistakes = JSON.parse(localStorage.getItem('zakirun_mistakes_log') || '[]');
+                const entry = {
+                    id: 'mstk-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+                    player_name: 'Siz (Yarışmacı)',
+                    game_name: data.game_name || "Kur'an Kelime Oyunu",
+                    game_id: data.game_id || 'kelime_oyunu',
+                    surah_id: data.surah_id || 0,
+                    sure_name: data.sure_name || 'Kelime Oyunu',
+                    ayah_id: data.ayah_id || 0,
+                    reference: data.reference || 'Kelime Oyunu',
+                    question_type: data.question_type || 'Kelime Tahmini',
+                    target_text: data.target_text || '',
+                    selected_wrong_text: data.selected_wrong_text || '',
+                    full_ayah_text: data.full_ayah_text || '',
+                    timestamp: Date.now(),
+                    date_str: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+                };
+                mistakes.unshift(entry);
+                localStorage.setItem('zakirun_mistakes_log', JSON.stringify(mistakes));
+                fetch('/api/gameshow/mistakes/record', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(entry)
+                }).catch(() => {});
+            } catch(e) {}
+        }
+
+        function playWrongSound() {
+            playTone(280, 'sawtooth', 0.15, 0.2);
+            setTimeout(() => playTone(220, 'sawtooth', 0.25, 0.2), 120);
+        }
+
+        function toggleAudio() {
+            sfxEnabled = !sfxEnabled;
+            localStorage.setItem('zakirun_sfx', sfxEnabled ? '1' : '0');
+            document.getElementById('sfxIcon').innerText = sfxEnabled ? '🔊' : '🔇';
+        }
+
+        async function initWordGame() {
+            document.getElementById('sfxIcon').innerText = sfxEnabled ? '🔊' : '🔇';
+            if (wordMode === 'duel') {
+                await startWordDuelMatch();
+            } else {
+                await loadWordSoloRounds();
+            }
+        }
+
+        async function setWordMode(mode) {
+            wordMode = mode;
+            const btnSolo = document.getElementById('w-btn-mode-solo');
+            const btnDuel = document.getElementById('w-btn-mode-duel');
+            const duelCard = document.getElementById('w-duel-card');
+
+            if (mode === 'solo') {
+                btnSolo.className = 'py-1 px-3.5 rounded-xl font-black text-xs transition flex items-center gap-1.5 bg-gradient-to-r from-yellow-500 to-amber-600 text-black shadow-md';
+                btnDuel.className = 'py-1 px-3.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 text-gray-400 hover:text-white';
+                duelCard.classList.add('hidden');
+                await loadWordSoloRounds();
+            } else {
+                btnDuel.className = 'py-1 px-3.5 rounded-xl font-black text-xs transition flex items-center gap-1.5 bg-gradient-to-r from-yellow-500 to-amber-600 text-black shadow-md';
+                btnSolo.className = 'py-1 px-3.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 text-gray-400 hover:text-white';
+                duelCard.classList.remove('hidden');
+                await startWordDuelMatch();
+            }
+        }
+
+        async function loadWordSoloRounds() {
+            try {
+                const res = await fetch('/api/gameshow/puzzle-game?count=5');
+                const data = await res.json();
+                wordRounds = data.rounds || [];
+                currentWordIndex = 0;
+                wordPlayerScore = 0;
+                presentWordRound();
+            } catch (e) {
+                console.error('Word game fetch error:', e);
+            }
+        }
+
+        async function startWordDuelMatch() {
+            try {
+                document.getElementById('w-duel-card').classList.remove('hidden');
+                const res = await fetch('/api/gameshow/puzzle-duel/match', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        player_name: 'Siz (Yarışmacı)',
+                        rounds_count: 5
+                    })
+                });
+                const data = await res.json();
+                wordRounds = data.rounds || [];
+                wordDuelBot = data.player2;
+                currentWordIndex = 0;
+                wordPlayerScore = 0;
+                wordBotScore = 0;
+
+                document.getElementById('w-bot-name').innerText = wordDuelBot.name;
+                document.getElementById('w-bot-avatar').innerText = wordDuelBot.avatar || '👨‍🎓';
+
+                presentWordRound();
+            } catch (e) {
+                console.error('Duel match error:', e);
+            }
+        }
+
+        function presentWordRound() {
+            if (!wordRounds || wordRounds.length === 0) return;
+            wordBotTimers.forEach(clearTimeout);
+            wordBotTimers = [];
+
+            isWordCompleted = false;
+            currentWordRound = wordRounds[currentWordIndex];
+            wordRoundPoints = 20;
+
+            document.getElementById('w-surah-pill').innerText = `📖 ${currentWordRound.sure_name} Sûresi, ${currentWordRound.ayah_id}. Âyet`;
+            document.getElementById('w-round-indicator').innerText = `Soru ${currentWordIndex + 1} / ${wordRounds.length}`;
+            document.getElementById('w-current-val').innerText = `${wordRoundPoints} Puan`;
+            document.getElementById('w-clue-text').innerText = currentWordRound.clue;
+            document.getElementById('word-hud-score').innerText = `${wordPlayerScore} / 100 Puan`;
+
+            document.getElementById('w-verse-complete-box').classList.add('hidden');
+
+            const answerLetters = currentWordRound.letters || currentWordRound.answer.split('');
+            userSlots = answerLetters.map(() => ({ char: '', isRevealed: false }));
+
+            const pool = (currentWordRound.scrambled_pool && currentWordRound.scrambled_pool.length > 0)
+                ? currentWordRound.scrambled_pool
+                : answerLetters;
+            poolTiles = pool.map((ch, idx) => ({ id: idx, char: ch.toUpperCase(), isUsed: false }));
+
+            renderSlots();
+            renderTiles();
+
+            if (wordMode === 'duel' && wordDuelBot) {
+                document.getElementById('w-player-status').innerText = 'Yazıyor...';
+                document.getElementById('w-bot-status').innerText = 'Düşünüyor...';
+                document.getElementById('w-duel-ticker').innerText = `⚡ ${wordDuelBot.name} âyet ipucunu okuyor...`;
+                simulateBotWordRound();
+            }
+        }
+
+        function renderSlots() {
+            const container = document.getElementById('w-letter-slots');
+            container.innerHTML = userSlots.map((slot, idx) => {
+                let cls = 'letter-slot';
+                if (slot.isRevealed) cls += ' revealed';
+                else if (slot.char) cls += ' filled';
+                return `<div class="${cls}" onclick="removeSlotLetter(${idx})">${slot.char}</div>`;
+            }).join('');
+        }
+
+        function renderTiles() {
+            const container = document.getElementById('w-letter-tiles');
+            container.innerHTML = poolTiles.map(tile => `
+                <div class="letter-tile ${tile.isUsed ? 'used' : ''}" onclick="selectTile(${tile.id})">
+                    ${tile.char}
+                </div>
+            `).join('');
+        }
+
+        function selectTile(tileId) {
+            if (isWordCompleted) return;
+            const tile = poolTiles.find(t => t.id === tileId);
+            if (!tile || tile.isUsed) return;
+
+            const emptyIdx = userSlots.findIndex(s => !s.char && !s.isRevealed);
+            if (emptyIdx === -1) return;
+
+            tile.isUsed = true;
+            userSlots[emptyIdx].char = tile.char;
+            userSlots[emptyIdx].tileId = tile.id;
+            playTone(650 + emptyIdx * 50, 'sine', 0.05, 0.15);
+
+            renderSlots();
+            renderTiles();
+            checkWordComplete();
+        }
+
+        function removeSlotLetter(slotIdx) {
+            if (isWordCompleted) return;
+            const slot = userSlots[slotIdx];
+            if (!slot || slot.isRevealed || !slot.char) return;
+
+            const tile = poolTiles.find(t => t.id === slot.tileId);
+            if (tile) tile.isUsed = false;
+
+            slot.char = '';
+            slot.tileId = null;
+            playTone(400, 'sine', 0.05, 0.1);
+
+            renderSlots();
+            renderTiles();
+        }
+
+        function clearWordGuess() {
+            if (isWordCompleted) return;
+            userSlots.forEach(slot => {
+                if (!slot.isRevealed) {
+                    if (slot.tileId !== null) {
+                        const tile = poolTiles.find(t => t.id === slot.tileId);
+                        if (tile) tile.isUsed = false;
+                    }
+                    slot.char = '';
+                    slot.tileId = null;
+                }
+            });
+            renderSlots();
+            renderTiles();
+        }
+
+        function takeLetterHint() {
+            if (isWordCompleted) return;
+            const emptyIdx = userSlots.findIndex(s => !s.isRevealed);
+            if (emptyIdx === -1) return;
+
+            const answerLetters = currentWordRound.letters || currentWordRound.answer.split('');
+            const neededChar = answerLetters[emptyIdx].toUpperCase();
+
+            // Puan düşür (en az 4 puan kalır)
+            wordRoundPoints = Math.max(4, wordRoundPoints - 4);
+            document.getElementById('w-current-val').innerText = `${wordRoundPoints} Puan`;
+
+            // Eğer bu slota kullanıcı başka harf koymuşsa iade et
+            if (userSlots[emptyIdx].tileId !== null) {
+                const tile = poolTiles.find(t => t.id === userSlots[emptyIdx].tileId);
+                if (tile) tile.isUsed = false;
+            }
+
+            userSlots[emptyIdx].char = neededChar;
+            userSlots[emptyIdx].isRevealed = true;
+            userSlots[emptyIdx].tileId = null;
+
+            // Havuzdaki bir eşleşen harfi kullanıldı yap
+            const matchingTile = poolTiles.find(t => t.char === neededChar && !t.isUsed);
+            if (matchingTile) matchingTile.isUsed = true;
+
+            playTone(850, 'triangle', 0.1, 0.2);
+            renderSlots();
+            renderTiles();
+            checkWordComplete();
+        }
+
+        function checkWordComplete() {
+            const allFilled = userSlots.every(s => s.char);
+            if (!allFilled) return;
+
+            const userWord = userSlots.map(s => s.char).join('');
+            const targetWord = (currentWordRound.letters ? currentWordRound.letters.join('') : currentWordRound.answer).toUpperCase();
+
+            if (userWord === targetWord) {
+                onWordRoundFinished(true);
+            } else {
+                playWrongSound();
+                if (wordMode !== 'duel') {
+                    recordMistake({
+                        game_name: "Kur'an Kelime Oyunu",
+                        game_id: "kelime_oyunu",
+                        surah_id: currentWordRound.surah_id || 0,
+                        sure_name: currentWordRound.sure_name || currentWordRound.source || "Kelime Oyunu",
+                        ayah_id: currentWordRound.ayah_id || 0,
+                        reference: currentWordRound.source || `Kelime Oyunu (Tur ${currentWordIndex + 1})`,
+                        question_type: "Harf Dizilimi",
+                        target_text: targetWord,
+                        selected_wrong_text: userWord,
+                        full_ayah_text: currentWordRound.meaning || currentWordRound.turkish || ""
+                    });
+                }
+                setTimeout(() => {
+                    clearWordGuess();
+                }, 600);
+            }
+        }
+
+        async function simulateBotWordRound() {
+            if (!wordDuelBot || !currentWordRound) return;
+            try {
+                const res = await fetch('/api/gameshow/puzzle-duel/simulate-bot-round', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        bot_name: wordDuelBot.name,
+                        round_id: currentWordRound.id,
+                        letter_count: currentWordRound.letters.length
+                    })
+                });
+                const data = await res.json();
+                const totalMs = (data.total_time_seconds || 8) * 1000;
+
+                const timer = setTimeout(() => {
+                    if (isWordCompleted) return;
+                    document.getElementById('w-bot-status').innerText = 'Tamamladı ✓';
+                    document.getElementById('w-duel-ticker').innerText = `⚡ ${wordDuelBot.name} kelimeyi doğru tamamladı!`;
+                    onWordRoundFinished(false);
+                }, totalMs);
+                wordBotTimers.push(timer);
+
+            } catch (e) {
+                console.error('Bot sim error:', e);
+            }
+        }
+
+        function onWordRoundFinished(playerWon) {
+            isWordCompleted = true;
+            wordBotTimers.forEach(clearTimeout);
+
+            if (playerWon) {
+                wordPlayerScore = Math.min(100, wordPlayerScore + wordRoundPoints);
+                playCorrectSound();
+                document.getElementById('w-complete-msg').innerText = `TEBRİKLER! KELİMEYİ BİLDİNİZ (+${wordRoundPoints} PUAN)`;
+            } else {
+                wordBotScore = Math.min(100, wordBotScore + 20);
+                playWrongSound();
+                document.getElementById('w-complete-msg').innerText = `RAKİP BİLDİ: ${wordDuelBot ? wordDuelBot.name : 'Bot'} (+20 Puan)`;
+            }
+
+            document.getElementById('word-hud-score').innerText = `${wordPlayerScore} / 100 Puan`;
+
+            document.getElementById('w-complete-arabic').innerText = currentWordRound.full_ayah_arabic || currentWordRound.answer_arabic;
+            document.getElementById('w-complete-meal').innerText = `"${currentWordRound.translation}"`;
+            document.getElementById('w-verse-complete-box').classList.remove('hidden');
+
+            playWordVerseAudio();
+        }
+
+        function playWordVerseAudio() {
+            const player = document.getElementById('quranAudioPlayer');
+            const btn = document.getElementById('w-audio-btn');
+            if (!player || !currentWordRound) return;
+
+            if (player.src !== currentWordRound.audio_url) {
+                player.src = currentWordRound.audio_url;
+            }
+
+            if (player.paused) {
+                player.play().then(() => {
+                    if (btn) btn.innerHTML = `<span>⏸</span><span>Durdur</span>`;
+                }).catch(e => console.warn('Audio play failed:', e));
+            } else {
+                player.pause();
+                if (btn) btn.innerHTML = `<span>🎧</span><span>Âyet Dinle</span>`;
+            }
+        }
+
+        function skipWordRound() {
+            nextWordRound();
+        }
+
+        function nextWordRound() {
+            const player = document.getElementById('quranAudioPlayer');
+            if (player) player.pause();
+
+            if (currentWordIndex < wordRounds.length - 1) {
+                currentWordIndex++;
+                presentWordRound();
+            } else {
+                alert(`🏁 Yarışma Tamamlandı!\nToplam Puanınız: ${wordPlayerScore} / 100 Puan`);
+                window.location.href = '/';
+            }
+        }
+
+        // Fiziksel klavye dinleyicisi
+        window.addEventListener('keydown', (e) => {
+            if (isWordCompleted) return;
+            const key = e.key.toLocaleUpperCase('tr-TR');
+            if (key === 'BACKSPACE') {
+                const lastFilled = [...userSlots].reverse().find(s => s.char && !s.isRevealed);
+                if (lastFilled) {
+                    const idx = userSlots.indexOf(lastFilled);
+                    removeSlotLetter(idx);
+                }
+            } else if (/^[A-ZÇĞİÖŞÜ]$/i.test(key)) {
+                const availableTile = poolTiles.find(t => t.char === key && !t.isUsed);
+                if (availableTile) {
+                    selectTile(availableTile.id);
+                }
+            }
+        });
+
+        initWordGame();
+    </script>
+</body>
+</html>

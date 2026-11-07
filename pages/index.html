@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zakirun // Kur'an Oyunları & Hâfızlık Arenası</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        studio: {
+                            950: '#030712',
+                            900: '#0b0f19',
+                            800: '#111827',
+                            gold: '#fbbf24',
+                            amber: '#f59e0b',
+                            crimson: '#ef4444',
+                            emerald: '#10b981',
+                            cyan: '#06b6d4',
+                            violet: '#8b5cf6'
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        amiri: ['ZakirunUthmani', 'Amiri', 'serif'],
+                        inter: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Supabase JS Client v2 & Zakirun Entegrasyonu -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/supabase_client.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600;700;900&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'ZakirunUthmani';
+            src: url('/zakirun.com.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        body {
+            background: radial-gradient(circle at 50% 10%, #1e1b4b 0%, #090d16 55%, #030712 100%);
+            color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+        .game-card {
+            background: rgba(17, 24, 39, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .game-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(245, 158, 11, 0.4);
+            box-shadow: 0 20px 40px -15px rgba(245, 158, 11, 0.2), 0 0 30px -10px rgba(99, 102, 241, 0.2);
+        }
+    </style>
+</head>
+<body class="selection:bg-amber-500 selection:text-black flex flex-col min-h-screen">
+
+    <!-- ULTRA SADE TOP BAR (Sadece Logo + ELO + Ses) -->
+    <header class="border-b border-white/5 bg-studio-950/70 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <a href="/" class="flex items-center space-x-3 group">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-700 flex items-center justify-center font-black text-black text-xl shadow-lg shadow-amber-500/20 group-hover:scale-105 transition">
+                    Z
+                </div>
+                <div>
+                    <div class="text-[10px] font-semibold tracking-wider text-amber-400 uppercase font-mono">ZAKİRUN // KUR'AN OYUNLARI</div>
+                    <div class="text-base font-black tracking-tight text-white flex items-center gap-2">
+                        <span>HÂFIZLIK ARENASI</span>
+                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Sağ Minimal Kontroller -->
+            <div class="flex items-center space-x-2 sm:space-x-3 text-xs">
+                <button onclick="openMistakesModal()" class="px-3 py-1.5 rounded-full bg-rose-500/15 border border-rose-500/40 text-rose-300 font-bold hover:bg-rose-500/25 transition flex items-center gap-1.5 shadow-sm" title="Tüm Oyunlardaki Hatalı Cevaplarım">
+                    <span>📌</span>
+                    <span class="hidden sm:inline">Hatalı Cevaplarım</span>
+                    <span id="txt-nav-mistakes-badge" class="px-1.5 py-0.2 rounded-full bg-rose-500/30 text-rose-200 text-[10px] font-mono">0</span>
+                </button>
+                <a href="/karne" class="px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 font-bold hover:bg-indigo-500/20 transition flex items-center gap-1.5" title="Hıfz Karnenizi Görün">
+                    <span>⭐</span>
+                    <span id="header-elo" class="font-mono text-white">1350</span>
+                    <span id="header-tier-label" class="text-indigo-400 hidden sm:inline">• Mutavassıt</span>
+                </a>
+                <button onclick="toggleAudio()" id="sfxBtn" class="px-3 py-1.5 rounded-full bg-studio-800 border border-gray-700 hover:border-amber-500 text-gray-300 hover:text-white transition flex items-center gap-1.5 font-mono">
+                    <span id="sfxIcon">🔊</span>
+                    <span class="hidden sm:inline">SES</span>
+                </button>
+
+                <!-- Giriş Yap & Kullanıcı Profil Butonu -->
+                <div id="auth-nav-wrapper" class="relative">
+                    <!-- Giriş Yap Butonu (Kullanıcı giriş yapmamışsa) -->
+                    <a href="/giris" id="btn-nav-login" class="px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold transition flex items-center gap-1.5 shadow-md shadow-amber-500/20 hover:scale-105 transform active:scale-95" title="Giriş Yap veya Kayıt Ol">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+                        <span>Giriş Yap</span>
+                    </a>
+
+                    <!-- Profil Menüsü (Kullanıcı giriş yapmışsa) -->
+                    <div id="user-profile-menu" class="hidden relative">
+                        <button onclick="toggleUserNavMenu()" class="flex items-center gap-2 px-3 py-1 rounded-full bg-studio-900 border border-amber-500/40 hover:border-amber-400 transition shadow-sm group">
+                            <img id="nav-user-avatar" src="" alt="Avatar" class="w-6 h-6 rounded-full border border-amber-400/50 object-cover bg-amber-500/20">
+                            <span id="nav-user-name" class="font-bold text-white max-w-[90px] truncate">Kullanıcı</span>
+                            <span class="text-amber-400 text-[10px]">▼</span>
+                        </button>
+                        <!-- Açılır Menü -->
+                        <div id="user-nav-dropdown" class="hidden absolute right-0 top-full mt-2 w-52 bg-studio-900/95 border border-amber-500/30 rounded-2xl p-2 shadow-2xl backdrop-blur-xl z-50 space-y-1 divide-y divide-white/5">
+                            <div class="px-3 py-2 text-[11px] text-gray-400">
+                                <div id="dropdown-user-full-name" class="font-bold text-white truncate text-xs"></div>
+                                <div id="dropdown-user-email" class="truncate font-mono text-[10px] text-gray-400"></div>
+                                <div id="dropdown-user-tier" class="text-amber-400 font-bold mt-1 text-[11px]"></div>
+                            </div>
+                            <div class="pt-1 space-y-0.5">
+                                <a href="/karne" class="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-300 hover:text-white hover:bg-white/5 transition">
+                                    <span>⭐</span>
+                                    <span>Hıfz Karnem</span>
+                                </a>
+                                <a href="/giris" class="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-300 hover:text-white hover:bg-white/5 transition">
+                                    <span>🔄</span>
+                                    <span>Hesap Yönetimi</span>
+                                </a>
+                                <button onclick="logoutNavUser()" class="w-full text-left flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition">
+                                    <span>🚪</span>
+                                    <span>Çıkış Yap</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ANA GÖVDE: OYUNLARI SEÇME HUB'I (SADE & DİNGİN) -->
+    <main id="mode-lobby" class="max-w-6xl mx-auto px-6 py-12 flex-1 w-full space-y-10">
+
+        <!-- Dingin Karşılama Başlığı -->
+        <div class="text-center space-y-3 max-w-2xl mx-auto">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 font-mono text-xs font-bold uppercase tracking-wider">
+                <span>📖 TERTEMİZ & ODAKLANMIŞ KUR'AN MERKEZİ</span>
+                <span>•</span>
+                <span>Turnuvalar & Canlı Şampiyonalar</span>
+            </div>
+            <h1 class="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
+                Oyununu Seç, <span class="bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 bg-clip-text text-transparent">Hıfzını Pekiştir!</span>
+            </h1>
+            <p class="text-gray-400 text-sm sm:text-base leading-relaxed">
+                Her oyun kendi tertemiz sayfasında açılır; hiçbir karışıklık ve gereksiz buton olmadan doğrudan âyetlere odaklanın.
+            </p>
+        </div>
+
+        <!-- 1. BAŞ ODA: KUR'AN ÖĞRENME PORTALI (ELİFBÂ, TECVİD & KIRAAT MEKTEBİ) -->
+        <div class="relative overflow-hidden rounded-3xl border-2 border-amber-500/40 bg-gradient-to-r from-studio-900 via-indigo-950/70 to-studio-900 p-6 sm:p-8 shadow-2xl group hover:border-amber-400 transition-all duration-300">
+            <div class="absolute -right-16 -top-16 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -left-16 -bottom-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6">
+                <div class="space-y-3 text-center lg:text-left">
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-gradient-to-r from-amber-500/20 to-emerald-500/20 border border-amber-500/30 text-amber-300 font-mono text-xs font-black uppercase tracking-wider">
+                        <span>🎓 1. BAŞ ODA // ÖNCELİKLİ ÖĞRENME KÜRSÜSÜ</span>
+                        <span>•</span>
+                        <span>SIFIRDAN KUR'AN MEKTEBİ</span>
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                        Önce Kur'an-ı Kerim'i <span class="bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 bg-clip-text text-transparent">Adım Adım Öğrenelim!</span>
+                    </h2>
+                    <p class="text-gray-300 text-xs sm:text-sm max-w-2xl leading-relaxed">
+                        Yarışmalara ve bulmaca düellolarına katılmadan önce; 28 harfin mahrecini, harekeleri, cezm/şeddeyi ve tecvid kaidelerini sesli telaffuzlarla ders ders öğrenin.
+                    </p>
+                    <!-- 4 Kademe Etiketleri -->
+                    <div class="flex flex-wrap items-center justify-center lg:justify-start gap-2 pt-1 text-[11px] font-mono">
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-amber-300 font-bold">1. Harfler & Harekeler</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-cyan-300 font-bold">2. Kelime Okuma</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-purple-300 font-bold">3. Tecvid Kaideleri</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-emerald-300 font-bold">4. Uygulamalı Kıraat</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+                    <a href="/ogren" class="w-full sm:w-auto px-7 py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-black font-black text-sm shadow-xl shadow-amber-500/25 hover:scale-105 active:scale-95 transition flex items-center justify-center gap-2.5">
+                        <span>🚀</span>
+                        <span>Ders 1 ile Hemen Başla</span>
+                        <span>→</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- OYUN KARTLARI GRID'I -->
+        <div id="tables-horizontal-scroll" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+
+            <!-- 1. KUTUCUK: OKUNAN ÂYETTEKİ KELİMEYİ BUL -->
+            <a href="/oyun/okunan-kelimeyi-bul" class="game-card rounded-3xl p-7 flex flex-col justify-between group relative overflow-hidden border-amber-500/30 hover:border-amber-400">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-3xl group-hover:scale-110 transition shadow-inner">
+                            🎧
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[11px] font-bold">
+                            1. ODA // YENİ BAŞLAYANLAR
+                        </span>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-black text-white group-hover:text-amber-400 transition">
+                            Okunan Kelimeyi Bul
+                        </h2>
+                        <p class="text-gray-400 text-xs mt-2 leading-relaxed">
+                            Kur'an'ı yeni öğrenenler için 4 çerçeveli âyet dinleme oyunu. Okunan kelimeyi dinleyin, 4 çerçeveden doğru olanı bulun.
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 pt-2">
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-gray-300 font-medium">👤 Tek Kişilik</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-gray-300 font-medium">⚔️ 1v1 Düello</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-cyan-400 font-medium">🎧 quran.com WBW</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-amber-400 font-medium">100 Puan</span>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold text-amber-400 group-hover:text-amber-300">
+                    <span>Dinle ve Kelimeyi Bul</span>
+                    <span class="text-base group-hover:translate-x-1 transition">→</span>
+                </div>
+            </a>
+
+            <!-- 2. KUTUCUK: SÛRE EZBERLEME OYUNU -->
+            <a href="/oyun/sure-ezberleme" class="game-card rounded-3xl p-7 flex flex-col justify-between group relative overflow-hidden border-cyan-500/30 hover:border-cyan-400">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="w-14 h-14 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-3xl group-hover:scale-110 transition shadow-inner">
+                            📖
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[11px] font-bold">
+                            2. ODA // SÛRE BÜTÜNLÜĞÜ
+                        </span>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-black text-white group-hover:text-cyan-400 transition">
+                            Sûre Ezberleme Oyunu
+                        </h2>
+                        <p class="text-gray-400 text-xs mt-2 leading-relaxed">
+                            Sûre akışını bozmadan dinlenen âyetten sonraki âyeti bulun. Kolay ve müteşâbih (zor) modlarıyla sûre ezberinizi pekiştirin.
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 pt-2">
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-gray-300 font-medium">👤 Tek Kişilik</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-gray-300 font-medium">⚔️ 1v1 Düello</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-cyan-400 font-medium">📖 Sûre Sırası</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-amber-400 font-medium">🎧 Kesintisiz Tilâvet</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-emerald-400 font-medium">100 Puan</span>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold text-cyan-400 group-hover:text-cyan-300">
+                    <span>Dinlenen Âyetten Sonraki Âyeti Bul</span>
+                    <span class="text-base group-hover:translate-x-1 transition">→</span>
+                </div>
+            </a>
+
+            <!-- 3. KUTUCUK: ÂYET TAMAMLAMA OYUNU (2. ODA) -->
+            <a href="/oyun/ayet-tamamlama" class="game-card rounded-3xl p-7 flex flex-col justify-between group relative overflow-hidden border-amber-500/30 hover:border-amber-400">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-3xl group-hover:scale-110 transition shadow-inner">
+                            ✍️
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[11px] font-bold">
+                            2. ODA // ÂYET TAMAMLAMA
+                        </span>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-black text-white group-hover:text-amber-400 transition">
+                            Âyet Tamamlama Oyunu
+                        </h2>
+                        <p class="text-gray-400 text-xs mt-2 leading-relaxed">
+                            Heyecanlı 3'ten geriye sayım ile âyette kaybolan kelimeyi bulun. Sağdan sola daktilo efektiyle âyeti tamamlayın ve tilâveti dinleyin.
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 pt-2">
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-gray-300 font-medium">👤 Tek Kişilik</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-gray-300 font-medium">🔒 1v1 Düello</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-amber-400 font-medium">⌨️ Daktilo Efekti</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-cyan-400 font-medium">⏳ 3sn Geri Sayım</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-emerald-400 font-medium">100 Puan</span>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold text-amber-400 group-hover:text-amber-300">
+                    <span>Kaybolan Kelimeyi Daktilo ile Tamamla</span>
+                    <span class="text-base group-hover:translate-x-1 transition">→</span>
+                </div>
+            </a>
+
+            <!-- 2. KELİME OYUNU -->
+            <a href="/oyun/kelime-oyunu" class="game-card rounded-3xl p-7 flex flex-col justify-between group">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="w-14 h-14 rounded-2xl bg-yellow-500/15 border border-yellow-500/30 flex items-center justify-center text-3xl group-hover:scale-110 transition shadow-inner">
+                            🔤
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-[11px] font-bold">
+                            KLASİK
+                        </span>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-black text-white group-hover:text-yellow-400 transition">
+                            Kur'an Kelime Oyunu
+                        </h2>
+                        <p class="text-gray-400 text-xs mt-2 leading-relaxed">
+                            Harf kutularını açarak ve âyet ipuçlarını kullanarak hedef kelimeyi en az harfle tahmin edin, puanları toplayın.
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 pt-2">
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-gray-300 font-medium">👤 Tek Kişilik</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-gray-300 font-medium">⚔️ 1v1 Düello</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-yellow-400 font-medium">100 Puan</span>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold text-yellow-400 group-hover:text-yellow-300">
+                    <span>Kelimeyi Tahmin Et</span>
+                    <span class="text-base group-hover:translate-x-1 transition">→</span>
+                </div>
+            </a>
+
+            <!-- 3. KUR'AN BİLGİ YARIŞMASI (11 BASAMAK) -->
+            <a href="/oyun/bilgi-yarismasi" class="game-card rounded-3xl p-7 flex flex-col justify-between group">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-3xl group-hover:scale-110 transition shadow-inner">
+                            👑
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold">
+                            11 BASAMAK
+                        </span>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-black text-white group-hover:text-emerald-400 transition">
+                            Kur'an Bilgi Yarışması
+                        </h2>
+                        <p class="text-gray-400 text-xs mt-2 leading-relaxed">
+                            11 Basamaklı soru merdiveni, 3 joker ve Mahmoud Khalil Al-Husary tilâvetiyle 100 Tam Puan Zirvesine tırmanın.
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 pt-2">
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-gray-300 font-medium">👑 Milyoner Formatı</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-gray-300 font-medium">3 Joker</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-emerald-400 font-medium">100 Puan</span>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold text-emerald-400 group-hover:text-emerald-300">
+                    <span>Yarışmaya Katıl</span>
+                    <span class="text-base group-hover:translate-x-1 transition">→</span>
+                </div>
+            </a>
+
+            <!-- 4. ÂYET İÇİ KELİME BLOKLARI -->
+            <a href="/oyun/ayet-bloklari" class="game-card rounded-3xl p-7 flex flex-col justify-between group">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="w-14 h-14 rounded-2xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-3xl group-hover:scale-110 transition shadow-inner">
+                            🧱
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-400 text-[11px] font-bold">
+                            KELİME KULESİ
+                        </span>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-black text-white group-hover:text-purple-400 transition">
+                            Âyet İçi Kelime Blokları
+                        </h2>
+                        <p class="text-gray-400 text-xs mt-2 leading-relaxed">
+                            Âyet meâlinde eksik kalan yerleri 3D mor bloklar arasından seçip kule gibi dizerek tamamlayın.
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 pt-2">
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-gray-300 font-medium">👤 Tek Kişilik</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-gray-300 font-medium">⚔️ 1v1 Düello</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-purple-400 font-medium">Uthmânî 2</span>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold text-purple-400 group-hover:text-purple-300">
+                    <span>Blokları Tamamla</span>
+                    <span class="text-base group-hover:translate-x-1 transition">→</span>
+                </div>
+            </a>
+
+            <!-- 5. TURNUVALAR & KUPA -->
+            <a href="/turnuvalar" class="game-card rounded-3xl p-7 flex flex-col justify-between group">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="w-14 h-14 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-3xl group-hover:scale-110 transition shadow-inner">
+                            🏆
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[11px] font-bold">
+                            LİG & KUPA
+                        </span>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-black text-white group-hover:text-cyan-400 transition">
+                            Haftalık Şampiyonalar
+                        </h2>
+                        <p class="text-gray-400 text-xs mt-2 leading-relaxed">
+                            Cüz bazlı (Amme, Yâsîn, Mülk, Bakara) 16'lı ve 32'li turnuva ağaçlarında bot hâfızlara karşı kupa karşılaşmaları yapın.
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 pt-2">
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-gray-300 font-medium">16'lı Turnuva Ağacı</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-gray-300 font-medium">Cüz Kupaları</span>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold text-cyan-400 group-hover:text-cyan-300">
+                    <span>Turnuva Ağacını Gör</span>
+                    <span class="text-base group-hover:translate-x-1 transition">→</span>
+                </div>
+            </a>
+
+            <!-- 6. HIFZ KARNESİ -->
+            <a href="/karne" class="game-card rounded-3xl p-7 flex flex-col justify-between group">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="w-14 h-14 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-3xl group-hover:scale-110 transition shadow-inner">
+                            📊
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[11px] font-bold">
+                            ANALİZ
+                        </span>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-black text-white group-hover:text-rose-400 transition">
+                            Hıfz Karnem & Analiz
+                        </h2>
+                        <p class="text-gray-400 text-xs mt-2 leading-relaxed">
+                            Hâfız ELO dereceniz, takıldığınız zayıf âyetlerin dökümü ve aralıklı tekrar (spaced repetition) ile pekiştirme listesi.
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 pt-2">
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-gray-300 font-medium">ELO Derecesi</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-studio-800 border border-white/5 text-[11px] text-gray-300 font-medium">Zayıf Âyet Tekrarı</span>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold text-rose-400 group-hover:text-rose-300">
+                    <span>Karneni İncele</span>
+                    <span class="text-base group-hover:translate-x-1 transition">→</span>
+                </div>
+            </a>
+
+        </div>
+
+    </main>
+
+    <!-- ULTRA SADE FOOTER -->
+    <footer class="border-t border-white/5 py-6 px-6 text-center text-xs text-gray-500 font-mono">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div>ZAKİRUN HÂFIZLIK PLATFORMU &bull; KUR'AN İLİMLERİ &bull; 2026</div>
+            <div class="text-gray-600">Her oyun müstakil sayfada &bull; Sıfır karmaşa</div>
+        </div>
+    </footer>
+
+    <script>
+        // Ses efekti durumu
+        let sfxEnabled = true;
+        function toggleAudio() {
+            sfxEnabled = !sfxEnabled;
+            const icon = document.getElementById('sfxIcon');
+            icon.innerText = sfxEnabled ? '🔊' : '🔇';
+            localStorage.setItem('zakirun_sfx', sfxEnabled ? '1' : '0');
+        }
+
+        // Kullanıcı ELO skorunu çek
+        async function fetchUserElo() {
+            try {
+                const res = await fetch('/api/gameshow/elo/Siz%20(Yar%C4%B1%C5%9Fmac%C4%B1)');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.elo) {
+                        const el = document.getElementById('header-elo');
+                        if (el) el.innerText = data.elo;
+                    }
+                }
+            } catch (e) {
+                console.log("Elo fetch:", e);
+            }
+        }
+        fetchUserElo();
+    </script>
+
+    <!-- MERKEZİ HATALI CEVAPLARIM İSTATİSTİK MODALI -->
+    <div id="mistakes-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-studio-900 border-2 border-rose-500/50 rounded-3xl p-6 sm:p-7 max-w-2xl w-full shadow-2xl relative max-h-[88vh] flex flex-col">
+            <!-- Modal Başlık -->
+            <div class="flex items-center justify-between pb-4 border-b border-white/10 mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-2xl">
+                        📌
+                    </div>
+                    <div>
+                        <h3 class="text-base sm:text-lg font-black text-white font-orbitron tracking-wide">
+                            HATALI CEVAPLARIM // MERKEZİ İSTATİSTİK
+                        </h3>
+                        <p class="text-xs text-gray-400">Tek kişilik oyunlarda takıldığınız sorular ve eksikleriniz</p>
+                    </div>
+                </div>
+                <button onclick="closeMistakesModal()" class="p-2 rounded-xl bg-studio-800 text-gray-400 hover:text-white transition">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Oyun Filtre Butonları -->
+            <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-4">
+                <button onclick="filterMistakes('all')" id="btn-filter-all" class="px-3 py-1 rounded-lg text-xs font-bold bg-amber-500 text-black">Tümü</button>
+                <button onclick="filterMistakes('sure_ezberleme')" id="btn-filter-sure" class="px-3 py-1 rounded-lg text-xs font-bold bg-studio-800 text-gray-400 hover:text-white">Sûre Ezberleme</button>
+                <button onclick="filterMistakes('ayet_tamamlama')" id="btn-filter-ayet" class="px-3 py-1 rounded-lg text-xs font-bold bg-studio-800 text-gray-400 hover:text-white">Âyet Tamamlama</button>
+                <button onclick="filterMistakes('okunan_kelime')" id="btn-filter-okunan" class="px-3 py-1 rounded-lg text-xs font-bold bg-studio-800 text-gray-400 hover:text-white">Okunan Kelime</button>
+                <button onclick="filterMistakes('kelime_oyunu')" id="btn-filter-kelime" class="px-3 py-1 rounded-lg text-xs font-bold bg-studio-800 text-gray-400 hover:text-white">Kelime Oyunu</button>
+                <button onclick="filterMistakes('ayet_bloklari')" id="btn-filter-blok" class="px-3 py-1 rounded-lg text-xs font-bold bg-studio-800 text-gray-400 hover:text-white">Âyet Blokları</button>
+                <button onclick="filterMistakes('bilgi_yarismasi')" id="btn-filter-bilgi" class="px-3 py-1 rounded-lg text-xs font-bold bg-studio-800 text-gray-400 hover:text-white">Bilgi Yarışması</button>
+            </div>
+
+            <!-- Hatalar Listesi (Kaydırılabilir) -->
+            <div id="mistakes-list-container" class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                <!-- Dinamik doldurulur -->
+            </div>
+
+            <!-- Modal Alt Bilgi & Aksiyonlar -->
+            <div class="border-t border-white/10 pt-4 mt-4 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <span class="text-gray-400 font-mono" id="txt-mistakes-total-summary">Toplam: 0 Hata Kaydı</span>
+                <div class="flex items-center gap-2">
+                    <a href="/karne" class="px-3 py-1.5 rounded-xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 hover:text-white transition flex items-center gap-1 font-bold">
+                        <span>📊</span>
+                        <span>Hıfz Karnesine Git</span>
+                    </a>
+                    <button onclick="clearAllMistakes()" class="px-3 py-1.5 rounded-xl bg-studio-800 border border-white/10 text-gray-300 hover:text-rose-400 hover:border-rose-400 transition">
+                        Listeyi Sıfırla
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // HATALI CEVAPLARIM MOTORU (INDEX)
+        let currentMistakeFilter = 'all';
+        let cachedMistakes = [];
+
+        async function updateMistakesBadge() {
+            try {
+                // 1. Önce yerel hafızadan
+                const local = JSON.parse(localStorage.getItem('zakirun_mistakes_log') || '[]');
+                // 2. Sunucudan son listeyi al
+                const res = await fetch('/api/gameshow/mistakes/list?player_name=Siz%20(Yar%C4%B1%C5%9Fmac%C4%B1)&limit=100');
+                if (res.ok) {
+                    const data = await res.json();
+                    const srvMistakes = data.mistakes || [];
+                    // Birleştir & tekilleştir
+                    const map = new Map();
+                    local.forEach(m => map.set(m.id || (m.game_id + '_' + m.target_text + '_' + m.created_at), m));
+                    srvMistakes.forEach(m => map.set(m.id || (m.game_id + '_' + m.target_text + '_' + m.created_at), m));
+                    cachedMistakes = Array.from(map.values()).sort((a,b) => (b.created_at || b.timestamp || 0) - (a.created_at || a.timestamp || 0));
+                } else {
+                    cachedMistakes = local;
+                }
+            } catch(e) {
+                cachedMistakes = JSON.parse(localStorage.getItem('zakirun_mistakes_log') || '[]');
+            }
+
+            const badge = document.getElementById('txt-nav-mistakes-badge');
+            if (badge) badge.innerText = cachedMistakes.length;
+        }
+
+        function openMistakesModal() {
+            document.getElementById('mistakes-modal').classList.remove('hidden');
+            renderMistakesList();
+        }
+
+        function closeMistakesModal() {
+            document.getElementById('mistakes-modal').classList.add('hidden');
+        }
+
+        function filterMistakes(filter) {
+            currentMistakeFilter = filter;
+            const filterKeys = {
+                'all': 'btn-filter-all',
+                'sure_ezberleme': 'btn-filter-sure',
+                'ayet_tamamlama': 'btn-filter-ayet',
+                'okunan_kelime': 'btn-filter-okunan',
+                'kelime_oyunu': 'btn-filter-kelime',
+                'ayet_bloklari': 'btn-filter-blok',
+                'bilgi_yarismasi': 'btn-filter-bilgi'
+            };
+            Object.keys(filterKeys).forEach(k => {
+                const btn = document.getElementById(filterKeys[k]);
+                if (btn) btn.className = 'px-3 py-1 rounded-lg text-xs font-bold bg-studio-800 text-gray-400 hover:text-white';
+            });
+            const activeBtn = document.getElementById(filterKeys[filter]);
+            if (activeBtn) activeBtn.className = 'px-3 py-1 rounded-lg text-xs font-bold bg-amber-500 text-black';
+            renderMistakesList();
+        }
+
+        function renderMistakesList() {
+            const container = document.getElementById('mistakes-list-container');
+            let filtered = cachedMistakes;
+            if (currentMistakeFilter !== 'all') {
+                filtered = cachedMistakes.filter(m => m.game_id === currentMistakeFilter);
+            }
+
+            document.getElementById('txt-mistakes-total-summary').innerText = `Toplam: ${filtered.length} Hata Kaydı`;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10 text-gray-400 space-y-2">
+                        <div class="text-3xl">✨</div>
+                        <div class="text-sm font-bold text-gray-300">Harika! Hata kaydı bulunmuyor.</div>
+                        <div class="text-xs text-gray-500">Tek kişilik oyunları hatasız tamamladığınızda veya hatalarınızı sildiğinizde liste temiz kalır.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const gameColors = {
+                'sure_ezberleme': { bg: 'bg-cyan-500/15', border: 'border-cyan-500/40', text: 'text-cyan-300', label: 'Sûre Ezberleme' },
+                'ayet_tamamlama': { bg: 'bg-emerald-500/15', border: 'border-emerald-500/40', text: 'text-emerald-300', label: 'Âyet Tamamlama' },
+                'okunan_kelime': { bg: 'bg-amber-500/15', border: 'border-amber-500/40', text: 'text-amber-300', label: 'Okunan Kelime' },
+                'kelime_oyunu': { bg: 'bg-violet-500/15', border: 'border-violet-500/40', text: 'text-violet-300', label: 'Kelime Oyunu' },
+                'ayet_bloklari': { bg: 'bg-yellow-500/15', border: 'border-yellow-500/40', text: 'text-yellow-300', label: 'Âyet Blokları' },
+                'bilgi_yarismasi': { bg: 'bg-rose-500/15', border: 'border-rose-500/40', text: 'text-rose-300', label: 'Bilgi Yarışması' }
+            };
+
+            container.innerHTML = filtered.map(m => {
+                const conf = gameColors[m.game_id] || { bg: 'bg-gray-500/15', border: 'border-gray-500/40', text: 'text-gray-300', label: m.game_name || 'Oyun' };
+                const timeStr = m.created_at ? new Date(m.created_at * 1000).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : (m.date_str || '');
+                return `
+                    <div class="p-3.5 rounded-2xl bg-studio-950/70 border border-white/5 hover:border-white/15 transition space-y-2">
+                        <div class="flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded-md ${conf.bg} border ${conf.border} ${conf.text} font-bold text-[10px]">
+                                    ${conf.label}
+                                </span>
+                                <span class="text-gray-400 font-mono text-[11px]">${m.reference || ''}</span>
+                            </div>
+                            <span class="text-gray-500 text-[10px] font-mono">${timeStr}</span>
+                        </div>
+
+                        ${m.full_ayah_text ? `
+                            <div class="text-sm text-amber-100/90 font-amiri leading-relaxed" dir="rtl">
+                                ${m.full_ayah_text}
+                            </div>
+                        ` : ''}
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1 border-t border-white/5">
+                            <div class="p-2 rounded-xl bg-emerald-950/30 border border-emerald-500/20 text-emerald-300">
+                                <span class="text-[10px] text-emerald-400 block font-bold">DOĞRU OLMASI GEREKEN:</span>
+                                <span class="font-bold text-sm" dir="rtl">${m.target_text || '-'}</span>
+                            </div>
+                            <div class="p-2 rounded-xl bg-rose-950/30 border border-rose-500/20 text-rose-300">
+                                <span class="text-[10px] text-rose-400 block font-bold">SİZİN VERDİĞİNİZ YANLIŞ CEVAP:</span>
+                                <span class="font-bold text-sm" dir="rtl">${m.selected_wrong_text || '-'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function clearAllMistakes() {
+            if (confirm("Tüm hatalı cevaplar geçmişini silmek istediğinize emin misiniz?")) {
+                localStorage.removeItem('zakirun_mistakes_log');
+                cachedMistakes = [];
+                updateMistakesBadge();
+                renderMistakesList();
+                fetch('/api/gameshow/mistakes/clear', { method: 'POST' }).catch(() => {});
+            }
+        }
+
+        // -------------------------------------------------------------
+        // KULLANICI GİRİŞ DURUMU & PROFİL NAVİGASYONU
+        // -------------------------------------------------------------
+        function checkNavAuth() {
+            try {
+                const raw = localStorage.getItem('zakirun_user');
+                const loginBtn = document.getElementById('btn-nav-login');
+                const userMenu = document.getElementById('user-profile-menu');
+                if (!loginBtn || !userMenu) return;
+
+                if (raw) {
+                    const user = JSON.parse(raw);
+                    loginBtn.classList.add('hidden');
+                    userMenu.classList.remove('hidden');
+
+                    const firstName = user.name ? user.name.split(' ')[0] : 'Kullanıcı';
+                    document.getElementById('nav-user-name').innerText = firstName;
+                    document.getElementById('dropdown-user-full-name').innerText = user.name || 'Kullanıcı';
+                    document.getElementById('dropdown-user-email').innerText = user.email || '';
+                    document.getElementById('dropdown-user-tier').innerText = 'Seviye: ' + (user.hifz_tier || 'Mutavassıt');
+
+                    const avatarEl = document.getElementById('nav-user-avatar');
+                    avatarEl.src = user.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(user.name || 'User')}`;
+
+                    if (user.elo) {
+                        const eloEl = document.getElementById('header-elo');
+                        if (eloEl) eloEl.innerText = user.elo;
+                    }
+                    if (user.hifz_tier) {
+                        const tierEl = document.getElementById('header-tier-label');
+                        if (tierEl) tierEl.innerText = '• ' + user.hifz_tier.split(' ')[0];
+                    }
+                } else {
+                    loginBtn.classList.remove('hidden');
+                    userMenu.classList.add('hidden');
+                }
+            } catch(e) {
+                console.warn('Auth check error:', e);
+            }
+        }
+
+        function toggleUserNavMenu() {
+            const dd = document.getElementById('user-nav-dropdown');
+            if (dd) dd.classList.toggle('hidden');
+        }
+
+        async function logoutNavUser() {
+            if (confirm('Çıkış yapmak istediğinize emin misiniz?')) {
+                if (window.ZakirunSupabase) {
+                    try { await ZakirunSupabase.signOut(); } catch(e) {}
+                }
+                localStorage.removeItem('zakirun_user');
+                checkNavAuth();
+                const dd = document.getElementById('user-nav-dropdown');
+                if (dd) dd.classList.add('hidden');
+            }
+        }
+
+        window.addEventListener('click', (e) => {
+            const wrapper = document.getElementById('auth-nav-wrapper');
+            const dd = document.getElementById('user-nav-dropdown');
+            if (wrapper && dd && !wrapper.contains(e.target)) {
+                dd.classList.add('hidden');
+            }
+        });
+
+        // Sayfa açıldığında rozeti ve giriş durumunu güncelle
+        document.addEventListener('DOMContentLoaded', async () => {
+            updateMistakesBadge();
+            checkNavAuth();
+
+            if (window.ZakirunSupabase) {
+                try {
+                    const session = await ZakirunSupabase.getSession();
+                    if (session && session.user && !localStorage.getItem('zakirun_user')) {
+                        const userObj = ZakirunSupabase.formatUser(session.user);
+                        await ZakirunSupabase.syncSessionWithServer(userObj);
+                        checkNavAuth();
+                    }
+                    ZakirunSupabase.onAuthStateChange(async (event, userObj) => {
+                        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+                            checkNavAuth();
+                        }
+                    });
+                } catch(e) {}
+            }
+        });
+    </script>
+
+</body>
+</html>

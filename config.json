@@ -1,0 +1,20 @@
+{
+  "project_name": "Zakirun Kur'an TV ve Bilgi Yarışması",
+  "version": "2.026",
+  "turso": {
+    "db_name": "zakirunbilgiyarismasi-zakirun002",
+    "libsql_url": "libsql://zakirunbilgiyarismasi-zakirun002.aws-eu-west-1.turso.io",
+    "http_url": "https://zakirunbilgiyarismasi-zakirun002.aws-eu-west-1.turso.io/v2/pipeline",
+    "auth_token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJleHAiOjE3OTQ2ODgyNDksImlhdCI6MTc5NDA4MzQ0OSwiaWQiOiIwMWExYjdiNC03YjAxLTczMmQtYTI1Ny00YzUzNzA1NWVmMWIiLCJraWQiOiJ1R3pJRVpPRjhyeFNZb1pQQ0lxUWpaQ2V4TG5oU2tMT09JVVY1dUhKQTVVIiwicmlkIjoiN2VkNWJlNGQtZTVjYS00MDdkLWIwY2ItNjFhNGE0NTE5NmYxIn0.Lp5gGuA8IWpchrku6l_41mVODnk4hJukP-wtMOeob3ao2FqG6uXpYsX_LMydmqh3M800LR2EkxKCbww7Xin3AA",
+    "status": "connected_verified"
+  },
+  "supabase": {
+    "url": "https://npggerrhnkpqxnrwzcfj.supabase.co",
+    "anon_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wZ2dlcnJobmtwcXhucnd6Y2ZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwNTY4NjcsImV4cCI6MjEwMzYzMjg2N30.khiNRufN9gR4HF6zvVxeXmQkLf4wekuikWcm8yvQw6Q"
+  },
+  "database_mode": "hybrid",
+  "server": {
+    "port": 8000,
+    "host": "0.0.0.0"
+  }
+}

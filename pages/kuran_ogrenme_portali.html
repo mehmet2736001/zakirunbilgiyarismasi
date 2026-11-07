@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kur'an Öğrenme Portalı // Diyanet İşleri Başkanlığı Elifbâ & Tecvid Mektebi</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        studio: {
+                            950: '#030712',
+                            900: '#0b0f19',
+                            850: '#0f172a',
+                            800: '#111827',
+                            gold: '#fbbf24',
+                            amber: '#f59e0b',
+                            crimson: '#ef4444',
+                            emerald: '#10b981',
+                            cyan: '#06b6d4',
+                            violet: '#8b5cf6'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        arabic: ['ZakirunUthmani', 'Scheherazade New', 'Amiri', 'serif']
+                    }
+                }
+            }
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/supabase_client.js"></script>
+    <style>
+        @font-face {
+            font-family: 'ZakirunUthmani';
+            src: url('/zakirun.com.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        body {
+            background: radial-gradient(circle at 50% 5%, #131d38 0%, #080d1a 45%, #030712 100%);
+            color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+        .quran-font {
+            font-family: 'ZakirunUthmani', 'Scheherazade New', 'Amiri', serif;
+            direction: rtl;
+            line-height: 1.8;
+        }
+        .tile-card {
+            background: rgba(15, 23, 42, 0.75);
+            border: 1.5px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 14px 10px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .tile-card:hover {
+            transform: translateY(-3px);
+            border-color: #f59e0b;
+            box-shadow: 0 10px 20px -5px rgba(245, 158, 11, 0.25);
+            background: rgba(30, 41, 59, 0.9);
+        }
+        .tile-card.playing {
+            border-color: #10b981 !important;
+            background: rgba(16, 185, 129, 0.15) !important;
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.5) !important;
+            transform: scale(1.05);
+        }
+        .tile-card.is-gray {
+            background: rgba(15, 23, 42, 0.45);
+            opacity: 0.88;
+        }
+        .thin-box {
+            border-color: rgba(245, 158, 11, 0.35);
+        }
+        .thick-box {
+            border-color: rgba(16, 185, 129, 0.35);
+        }
+        .stage-pill {
+            padding: 8px 16px;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 700;
+            transition: all 0.2s;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(15, 23, 42, 0.6);
+            color: #94a3b8;
+        }
+        .stage-pill:hover {
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .stage-pill.active {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #000000;
+            border-color: #f59e0b;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(3, 7, 18, 0.8);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+        }
+                .tile-card.is-listened {
+            border-color: rgba(16, 185, 129, 0.5) !important;
+            background: rgba(16, 185, 129, 0.12) !important;
+        }
+        .listened-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 16px;
+            height: 16px;
+            border-radius: 9999px;
+            background: #10b981;
+            color: #030712;
+            font-size: 10px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4);
+            z-index: 10;
+        }
+        .stage-pill.is-locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(0.6);
+        }
+        @keyframes quizPulseGlow {
+            0% {
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+                border-color: rgba(245, 158, 11, 0.9);
+                transform: scale(0.99);
+            }
+            40% {
+                box-shadow: 0 0 45px 12px rgba(245, 158, 11, 0.45), 0 0 75px 20px rgba(16, 185, 129, 0.3);
+                border-color: #f59e0b;
+                transform: scale(1.02);
+            }
+            100% {
+                box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 25px rgba(245, 158, 11, 0.25);
+                border-color: rgba(245, 158, 11, 0.5);
+                transform: scale(1);
+            }
+        }
+        .quiz-focus-active {
+            animation: quizPulseGlow 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(245, 158, 11, 0.4);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 selection:bg-amber-500 selection:text-black">
+
+    <!-- Gizli Ses Oynatıcı -->
+    <audio id="diyanetAudioPlayer" preload="auto"></audio>
+
+    <!-- ÜST NAVİGASYON ÇUBUĞU -->
+    <header class="max-w-7xl mx-auto mb-6">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4 p-4 rounded-3xl bg-studio-900/80 backdrop-blur-xl border border-white/10 shadow-2xl">
+            <!-- Sol Logo ve Başlık -->
+            <div class="flex items-center gap-3.5">
+                <a href="/" class="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 hover:scale-105 hover:bg-amber-500/25 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                </a>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-black uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">DİYANET İŞLERİ BAŞKANLIĞI</span>
+                        <span class="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">87 DERS & OTANTİK SES</span>
+                    </div>
+                    <h1 class="text-lg md:text-xl font-black text-white tracking-tight flex items-center gap-2 mt-0.5">
+                        <span>Kur'an Öğrenme Portalı</span>
+                        <span class="text-xs font-normal text-gray-400 font-sans hidden sm:inline">// Elifbâ & Tecvid Mektebi</span>
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Sağ Araçlar ve İlerleme -->
+            <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+                <div class="px-4 py-2 rounded-2xl bg-studio-950/80 border border-white/10 flex items-center gap-2.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="user-progress-text" class="text-xs font-bold text-gray-200 font-mono">0 / 87 Ders (%0)</span>
+                </div>
+                <button onclick="toggleAudio()" class="p-2.5 rounded-2xl bg-studio-950/80 border border-white/10 hover:border-amber-500/50 text-gray-300 hover:text-white transition" title="Ses Efektleri">
+                    <span id="sfxIcon">🔊</span>
+                </button>
+                <a href="/giris" id="portal-auth-btn" class="px-3.5 py-2 rounded-2xl bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-500/35 text-amber-300 hover:border-amber-400 hover:text-white transition text-xs font-bold flex items-center gap-1.5 shadow-sm" title="Giriş Yap / Profil">
+                    <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+                    <span id="portal-auth-btn-text">Giriş Yap</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 2 ANA AŞAMA SEKMELERİ (ELİFBÂ & TECVİD) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+            <button onclick="switchStage(1)" id="stage-btn-1" class="stage-pill active justify-center py-3">
+                <span class="w-7 h-7 rounded-lg bg-black/20 flex items-center justify-center text-sm font-bold font-mono">1</span>
+                <span class="text-sm font-bold">1. Aşama: Elifbâ (Harf & Harekeler)</span>
+            </button>
+            <button onclick="switchStage(2)" id="stage-btn-2" class="stage-pill justify-center py-3">
+                <span class="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-sm font-bold font-mono">2</span>
+                <span class="text-sm font-bold">2. Aşama: Tecvid Kuralları</span>
+            </button>
+        </div>
+
+        <!-- HIZLI DERS SEÇİCİ & GEÇİŞ ÇUBUĞU -->
+        <div class="mt-3 p-3 rounded-2xl bg-studio-900/60 border border-white/5 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2 flex-1 min-w-[280px]">
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">Ders Seç:</span>
+                <select id="lesson-select" onchange="onSelectLessonChange(this.value)" class="w-full bg-studio-950 border border-white/15 text-white text-xs font-medium rounded-xl px-3 py-2 outline-none focus:border-amber-500 transition">
+                    <!-- Dinamik doldurulur -->
+                </select>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="prevLesson()" id="btn-prev-lesson" class="px-3.5 py-1.5 rounded-xl bg-studio-950 hover:bg-studio-800 border border-white/10 text-xs font-bold text-gray-300 hover:text-white transition flex items-center gap-1.5">
+                    <span>←</span>
+                    <span class="hidden sm:inline">Önceki Ders</span>
+                </button>
+                <button onclick="nextLesson()" id="btn-next-lesson" class="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-black transition flex items-center gap-1.5 shadow-md shadow-amber-500/20">
+                    <span class="hidden sm:inline">Sonraki Ders</span>
+                    <span>→</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ANA İÇERİK ALANI -->
+    <main class="max-w-7xl mx-auto space-y-6">
+
+        <!-- DERS BAŞLIK KARTI -->
+        <section class="p-6 md:p-8 rounded-3xl bg-studio-900/70 border border-white/10 backdrop-blur-md relative overflow-hidden shadow-xl">
+            <div class="absolute -right-16 -top-16 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div class="relative z-10 flex flex-col md:flex-row md:items-start justify-between gap-4">
+                <div class="space-y-2 max-w-3xl">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span id="lesson-stage-label" class="text-[11px] font-mono font-bold uppercase tracking-wider text-amber-400 bg-amber-500/15 px-2.5 py-0.5 rounded-md border border-amber-500/30">
+                            ELİFBÂ
+                        </span>
+                        <span id="lesson-chapter-label" class="text-[11px] font-mono font-medium text-gray-400 bg-white/5 px-2.5 py-0.5 rounded-md border border-white/10">
+                            1. Harfler
+                        </span>
+                    </div>
+                    <h2 id="lesson-title" class="text-2xl md:text-3xl font-black text-white tracking-tight">
+                        Harfler
+                    </h2>
+                    <div id="lesson-intro" class="text-xs md:text-sm text-gray-300 leading-relaxed pt-1 whitespace-pre-line">
+                        Kur'an-ı Kerim harflerini ve mahreçlerini öğreniniz.
+                    </div>
+                </div>
+
+                <!-- Sesli Ders Başlığı Butonu -->
+                <div id="lesson-title-sound-container" class="flex-shrink-0">
+                    <button onclick="playLessonTitleSound()" class="px-4 py-2.5 rounded-2xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-bold flex items-center gap-2 transition hover:scale-105 shadow-lg">
+                        <span>🔊</span>
+                        <span>Ders Açıklamasını Dinle</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- CANLI HÜCRE DİNLEME ZORUNLULUĞU & İLERLEME ÇUBUĞU -->
+            <div id="cell-progress-container" class="mt-5 p-4 rounded-2xl bg-studio-950/85 border border-white/10 space-y-2.5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                    <div class="flex items-center gap-2">
+                        <span id="cell-progress-icon" class="text-base">🎧</span>
+                        <span id="cell-progress-title" class="font-bold text-gray-200">Ders Hücrelerini Dinleme Zorunluluğu:</span>
+                        <span id="cell-progress-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">Devam Ediyor</span>
+                    </div>
+                    <div id="cell-progress-count" class="font-mono font-bold text-amber-400">0 / 0 Hücre Dinlendi (%0)</div>
+                </div>
+                <div class="w-full h-2.5 rounded-full bg-white/10 overflow-hidden">
+                    <div id="cell-progress-bar" class="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <div id="cell-progress-msg" class="text-[11px] text-gray-400 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                    <span id="cell-progress-msg-text">Sonraki derse geçebilmek için bu dersteki her harf ve kelimeyi en az bir kez dinleyiniz.</span>
+                    <span id="cell-progress-remaining" class="text-amber-300 font-bold font-mono"></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- DİYANET DERS GRUPLARI & TABLOLARI -->
+        <section id="cards-grid" class="cards-grid" data-testid="cards-grid" class="cards-grid" data-cards-grid="true" class="space-y-6">
+            <!-- Dinamik doldurulur -->
+        </section>
+
+        <!-- PEKİŞTİRME & TEST BÖLÜMÜ -->
+        <section id="quiz-section" class="p-6 md:p-8 rounded-3xl bg-studio-900/80 border border-white/10 backdrop-blur-xl relative shadow-2xl">
+            <div class="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold">
+                        ★
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-black text-white">Ders Sonu Pekiştirme & Test</h3>
+                        <p class="text-xs text-gray-400">Öğrendiklerinizi sesli soru ile test edip dersi tamamlayınız.</p>
+                    </div>
+                </div>
+                <div class="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-3 py-1 rounded-xl border border-amber-500/20">
+                    +10 Puan
+                </div>
+            </div>
+
+            <div id="quiz-container" class="space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-studio-950/70 border border-white/10">
+                    <div class="text-sm font-semibold text-gray-200 flex items-center gap-2.5">
+                        <span class="text-amber-400">❓</span>
+                        <span id="quiz-prompt">Dinlediğiniz sesi doğru harf/kelime ile eşleştiriniz.</span>
+                    </div>
+                    <button onclick="playCurrentQuizAudio()" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-black flex items-center justify-center gap-2 transition shadow-md shadow-amber-500/20">
+                        <span>🔊</span>
+                        <span>Soruyu Tekrar Dinle</span>
+                    </button>
+                </div>
+
+                <!-- 4 Seçenek Izgarası -->
+                <div id="quiz-options-container" class="grid grid-cols-2 md:grid-cols-4 gap-3" dir="rtl">
+                    <!-- Dinamik doldurulur -->
+                </div>
+
+                <!-- Sonuç & Geri Bildirim Kutusu -->
+                <div id="quiz-feedback-box" class="hidden"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="max-w-7xl mx-auto mt-12 py-6 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-500">
+        <div>
+            Müfredat & Ses Kaynakları: <strong class="text-gray-300">Diyanet İşleri Başkanlığı Kur'an Portalı</strong> (<a href="https://kuran.diyanet.gov.tr/elifba" target="_blank" class="text-amber-400 hover:underline">kuran.diyanet.gov.tr/elifba</a>)
+        </div>
+        <div>
+            Zâkirûn Kur'an Platformu // 2026 Nesil Pedagoji & Kırâat Mektebi
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT KODLARI -->
+    <script>
+        let curriculum = [];
+        let currentLessonId = 1; // 1. Ders: Harfler (Elifbâ)
+        let currentLessonData = null;
+        let currentQuizIndex = 0;
+        let completedLessons = JSON.parse(localStorage.getItem('zakirun_completed_lessons') || '[]');
+
+        // Ses Efektleri
+        let sfxEnabled = localStorage.getItem('zakirun_sfx') !== '0';
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) audioCtx = new AudioCtx();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            return audioCtx;
+        }
+
+        function playTone(freq, type = 'sine', duration = 0.12, gainVal = 0.15) {
+            if (!sfxEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function toggleAudio() {
+            sfxEnabled = !sfxEnabled;
+            localStorage.setItem('zakirun_sfx', sfxEnabled ? '1' : '0');
+            document.getElementById('sfxIcon').innerText = sfxEnabled ? '🔊' : '🔇';
+        }
+
+        // BİLDİRİM (TOAST) SİSTEMİ
+        function showToast(message, type = 'info') {
+            let toast = document.getElementById('custom-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'custom-toast';
+                document.body.appendChild(toast);
+            }
+            
+            const baseClass = 'fixed bottom-6 right-6 z-50 max-w-md px-5 py-3.5 rounded-2xl shadow-2xl font-bold text-xs flex items-center gap-3 transition-all duration-300 transform';
+            if (type === 'warning') {
+                toast.className = `${baseClass} bg-amber-500/95 text-black border border-amber-400 translate-y-0 opacity-100 pointer-events-auto shadow-amber-500/20`;
+            } else if (type === 'success') {
+                toast.className = `${baseClass} bg-emerald-500/95 text-black border border-emerald-400 translate-y-0 opacity-100 pointer-events-auto shadow-emerald-500/20`;
+            } else {
+                toast.className = `${baseClass} bg-studio-900/95 text-white border border-white/20 translate-y-0 opacity-100 pointer-events-auto`;
+            }
+            
+            toast.innerHTML = `<span>${message}</span>`;
+            clearTimeout(window.__toastTimeout);
+            window.__toastTimeout = setTimeout(() => {
+                toast.className = `${baseClass} translate-y-10 opacity-0 pointer-events-none`;
+            }, 3500);
+        }
+
+        // KİLİT & İLERLEME KURALLARI
+        function isLessonUnlocked(lessonId) {
+            if (lessonId <= 1) return true;
+            if (completedLessons.includes(lessonId)) return true;
+            if (completedLessons.includes(lessonId - 1)) return true;
+            return false;
+        }
+
+        function isStageUnlocked(stageNum) {
+            if (stageNum === 1) return true;
+            if (stageNum === 2) {
+                // 2. Aşama (Tecvid), 1. Aşama (Elifbâ) dersleri bittiğinde (35. ders tamamlandığında) açılır
+                return completedLessons.includes(35) || isLessonUnlocked(36);
+            }
+            return false;
+        }
+
+        // HÜCRE DİNLEME TAKİBİ
+        function getListenedKey(lessonId) {
+            return `zakirun_listened_tiles_${lessonId}`;
+        }
+
+        function getListenedTiles(lessonId) {
+            try {
+                return new Set(JSON.parse(localStorage.getItem(getListenedKey(lessonId)) || '[]'));
+            } catch (e) {
+                return new Set();
+            }
+        }
+
+        let currentLessonAlreadyCompletedScroll = false;
+        let quizFocusTriggered = false;
+
+        function markTileAsListened(tileId) {
+            if (!tileId) return;
+            const total = countPlayableTiles(currentLessonData);
+            const listened = getListenedTiles(currentLessonId);
+            const wasAlreadyComplete = (listened.size >= total && total > 0);
+
+            listened.add(tileId);
+            localStorage.setItem(getListenedKey(currentLessonId), JSON.stringify(Array.from(listened)));
+            updateCellProgress();
+
+            const isNowComplete = (listened.size >= total && total > 0);
+
+            // KULLANICI SON HÜCREYİ DİNLEDİĞİNDE OTOMATİK ODAKLAN & SESİ ÇAL:
+            if (!wasAlreadyComplete && isNowComplete && !currentLessonAlreadyCompletedScroll) {
+                currentLessonAlreadyCompletedScroll = true;
+                triggerFocusAndPlayQuiz();
+            }
+        }
+
+        function triggerFocusAndPlayQuiz() {
+            quizFocusTriggered = false;
+            const quizSec = document.getElementById('quiz-section');
+            if (!quizSec) return;
+
+            showToast("🎯 Harika! Tüm hücreleri tamamladınız. Test sorusuna geçiliyor...", "success");
+
+            const executeQuizFocus = () => {
+                if (quizFocusTriggered) return;
+                quizFocusTriggered = true;
+
+                playTone(659.25, 'triangle', 0.12, 0.15);
+                setTimeout(() => playTone(880, 'triangle', 0.18, 0.2), 90);
+
+                // Soru kutucuğuna yumuşak odaklanma
+                quizSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                quizSec.classList.remove('quiz-focus-active');
+                void quizSec.offsetWidth; // Reflow tetikle
+                quizSec.classList.add('quiz-focus-active');
+
+                // Kutlama konfetisi
+                if (typeof confetti === 'function') {
+                    confetti({ particleCount: 40, spread: 65, origin: { y: 0.75 } });
+                }
+
+                // 'Soruyu Tekrar Dinle' butonu parıldama efekti
+                const repeatBtn = quizSec.querySelector('button[onclick*="playCurrentQuizAudio"]');
+                if (repeatBtn) {
+                    repeatBtn.classList.add('ring-4', 'ring-amber-400', 'scale-105');
+                    setTimeout(() => repeatBtn.classList.remove('ring-4', 'ring-amber-400', 'scale-105'), 2200);
+                }
+
+                // Otomatik soru sesini çal
+                setTimeout(() => {
+                    playCurrentQuizAudio();
+                }, 350);
+            };
+
+            const player = document.getElementById('diyanetAudioPlayer');
+            setTimeout(() => {
+                if (player && (!player.paused || player.currentTime > 0)) {
+                    // Son hücrenin sesi bittiğinde teste geç
+                    let endedTriggered = false;
+                    const onEnd = () => {
+                        if (endedTriggered) return;
+                        endedTriggered = true;
+                        player.removeEventListener('ended', onEnd);
+                        setTimeout(executeQuizFocus, 250);
+                    };
+                    player.addEventListener('ended', onEnd, { once: true });
+                    // Emniyet süresi: ses bitmese de maksimum 1.8 sn sonra teste odaklan
+                    setTimeout(() => {
+                        if (!endedTriggered) {
+                            endedTriggered = true;
+                            player.removeEventListener('ended', onEnd);
+                            executeQuizFocus();
+                        }
+                    }, 1800);
+                } else {
+                    setTimeout(executeQuizFocus, 450);
+                }
+            }, 80);
+        }
+
+        function countPlayableTiles(lesson) {
+            if (!lesson) return 0;
+            let count = 0;
+            if (lesson.groups) {
+                lesson.groups.forEach(g => {
+                    if (g.rows) {
+                        g.rows.forEach(r => {
+                            if (r.tiles) {
+                                r.tiles.forEach(t => {
+                                    if (!t.is_header && (t.arabic || t.audio_url)) count++;
+                                });
+                            }
+                        });
+                    }
+                    if (g.ayet_verses) {
+                        g.ayet_verses.forEach(av => {
+                            if (av.words) count += av.words.length;
+                        });
+                    }
+                });
+            }
+            if (count === 0 && lesson.items) {
+                count = lesson.items.length;
+            }
+            return count;
+        }
+
+        function updateCellProgress() {
+            const total = countPlayableTiles(currentLessonData);
+            const listenedSet = getListenedTiles(currentLessonId);
+            const count = Math.min(total, listenedSet.size);
+            const pct = total > 0 ? Math.round((count / total) * 100) : 100;
+
+            const countEl = document.getElementById('cell-progress-count');
+            const barEl = document.getElementById('cell-progress-bar');
+            const badgeEl = document.getElementById('cell-progress-badge');
+            const iconEl = document.getElementById('cell-progress-icon');
+            const msgTextEl = document.getElementById('cell-progress-msg-text');
+            const remainingEl = document.getElementById('cell-progress-remaining');
+            const btnNext = document.getElementById('btn-next-lesson');
+
+            if (countEl) countEl.innerText = `${count} / ${total} Hücre Dinlendi (%${pct})`;
+            if (barEl) barEl.style.width = `${pct}%`;
+
+            const isAllListened = (count >= total && total > 0);
+            const isCompleted = completedLessons.includes(currentLessonId);
+
+            if (isAllListened || isCompleted) {
+                if (badgeEl) {
+                    badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+                    badgeEl.innerText = '✓ Tamamlandı';
+                }
+                if (iconEl) iconEl.innerText = '✅';
+                if (msgTextEl) msgTextEl.innerText = 'Harika! Bu dersteki tüm hücreleri dinlediniz. Testi çözerek sonraki dersin kilidini açabilirsiniz.';
+                if (remainingEl) remainingEl.innerText = 'Tüm Hücreler Açık';
+                if (btnNext) {
+                    btnNext.innerHTML = '<span>Sonraki Ders</span><span>→</span>';
+                    btnNext.className = 'px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-black transition flex items-center gap-1.5 shadow-md shadow-amber-500/20';
+                }
+            } else {
+                if (badgeEl) {
+                    badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30';
+                    badgeEl.innerText = 'Dinleme Zorunlu';
+                }
+                if (iconEl) iconEl.innerText = '🎧';
+                if (msgTextEl) msgTextEl.innerText = 'Sonraki derse geçebilmek için bu dersteki her harf ve kelimeyi en az bir kez dinleyiniz.';
+                if (remainingEl) remainingEl.innerText = `Kalan: ${total - count} hücre`;
+                if (btnNext) {
+                    btnNext.innerHTML = '<span>Sonraki Ders</span><span title="Kilitli">🔒</span>';
+                    btnNext.className = 'px-3.5 py-1.5 rounded-xl bg-studio-950 border border-white/10 text-gray-400 hover:text-white text-xs font-bold transition flex items-center gap-1.5';
+                }
+            }
+        }
+
+        function highlightUnlistenedTiles() {
+            const container = (document.getElementById('lesson-groups-container') || document.getElementById('cards-grid'));
+            if (!container) return;
+            const unlistened = container.querySelectorAll('.tile-card:not(.is-listened):not(.cursor-default)');
+            unlistened.forEach(el => {
+                el.classList.add('ring-2', 'ring-amber-400', 'animate-pulse');
+                setTimeout(() => el.classList.remove('ring-2', 'ring-amber-400', 'animate-pulse'), 1800);
+            });
+        }
+
+        // PORTAL BAŞLATMA
+        async function initPortal() {
+            document.getElementById('sfxIcon').innerText = sfxEnabled ? '🔊' : '🔇';
+            updateUserProgressBadge();
+
+            try {
+                const res = await fetch('/api/learn/curriculum');
+                const data = await res.json();
+                curriculum = data.curriculum || [];
+                populateLessonSelect();
+                updateStageButtons();
+                
+                // Kayıtlı son ders veya ilk açık ders
+                let savedLessonId = parseInt(localStorage.getItem('zakirun_last_lesson_id') || '1');
+                if (!isLessonUnlocked(savedLessonId)) {
+                    savedLessonId = 1;
+                }
+                loadLesson(savedLessonId);
+            } catch (e) {
+                console.error('Müfredat yüklenirken hata:', e);
+            }
+        }
+
+        function updateUserProgressBadge() {
+            const count = completedLessons.length;
+            const total = curriculum.length || 87;
+            const pct = Math.round((count / total) * 100);
+            document.getElementById('user-progress-text').innerText = `${count} / ${total} Ders (%${pct})`;
+        }
+
+        function updateStageButtons() {
+            const stage1Btn = document.getElementById('stage-btn-1');
+            const stage2Btn = document.getElementById('stage-btn-2');
+            const stage2Unlocked = isStageUnlocked(2);
+
+            if (stage2Btn) {
+                if (stage2Unlocked) {
+                    stage2Btn.classList.remove('is-locked');
+                    stage2Btn.querySelector('.font-mono').innerText = '2';
+                    stage2Btn.title = '2. Aşama: Tecvid Kuralları';
+                } else {
+                    stage2Btn.classList.add('is-locked');
+                    stage2Btn.querySelector('.font-mono').innerText = '🔒';
+                    stage2Btn.title = '🔒 1. Aşama (Elifbâ) tamamlandığında açılır';
+                }
+            }
+        }
+
+        function populateLessonSelect() {
+            const select = document.getElementById('lesson-select');
+            select.innerHTML = '';
+
+            const stages = [
+                { stage: 1, name: "1. Aşama: Elifbâ (Harf & Harekeler)" },
+                { stage: 2, name: "2. Aşama: Tecvid Kuralları" }
+            ];
+
+            stages.forEach(st => {
+                const optGroup = document.createElement('optgroup');
+                const isStageLocked = (st.stage === 2 && !isStageUnlocked(2));
+                optGroup.label = isStageLocked ? `🔒 ${st.name} (Kilitli)` : st.name;
+
+                const stageLessons = curriculum.filter(d => d.stage === st.stage);
+                stageLessons.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d.id;
+                    const isDone = completedLessons.includes(d.id);
+                    const isUnlocked = isLessonUnlocked(d.id);
+                    
+                    if (isDone) {
+                        opt.textContent = `✓ ${d.id}. ${d.title}`;
+                        opt.style.color = '#10b981';
+                    } else if (d.id === currentLessonId) {
+                        opt.textContent = `▶ ${d.id}. ${d.title}`;
+                        opt.style.color = '#fbbf24';
+                    } else if (isUnlocked) {
+                        opt.textContent = `${d.id}. ${d.title}`;
+                    } else {
+                        opt.textContent = `🔒 ${d.id}. ${d.title} (Kilitli)`;
+                        opt.disabled = true;
+                        opt.style.color = '#64748b';
+                    }
+                    optGroup.appendChild(opt);
+                });
+                select.appendChild(optGroup);
+            });
+        }
+
+        function onSelectLessonChange(val) {
+            const id = parseInt(val);
+            if (!isNaN(id)) {
+                if (!isLessonUnlocked(id)) {
+                    showToast('🔒 Bu ders kilitlidir! Lütfen sırayla ilerleyiniz.', 'warning');
+                    select.value = currentLessonId;
+                    return;
+                }
+                loadLesson(id);
+            }
+        }
+
+        function switchStage(stageNum) {
+            if (stageNum === 2 && !isStageUnlocked(2)) {
+                playTone(200, 'sawtooth', 0.25, 0.2);
+                showToast('🔒 2. Aşama (Tecvid Kuralları) kilitlidir! Kilidi açmak için lütfen 1. Aşama (Elifbâ) derslerini tamamlayınız.', 'warning');
+                return;
+            }
+
+            for (let s = 1; s <= 2; s++) {
+                const btn = document.getElementById(`stage-btn-${s}`);
+                if (s === stageNum) {
+                    btn.className = 'stage-pill active justify-center py-3';
+                } else {
+                    btn.className = `stage-pill justify-center py-3 ${s === 2 && !isStageUnlocked(2) ? 'is-locked' : ''}`;
+                }
+            }
+
+            // İlgili aşamadaki en son açık dersi bul
+            const stageLessons = curriculum.filter(d => d.stage === stageNum);
+            const targetLesson = stageLessons.find(d => isLessonUnlocked(d.id) && !completedLessons.includes(d.id)) || stageLessons[0];
+            if (targetLesson) {
+                loadLesson(targetLesson.id);
+            }
+        }
+
+        async function loadLesson(lessonId) {
+            currentLessonAlreadyCompletedScroll = false;
+            quizFocusTriggered = false;
+            if (!isLessonUnlocked(lessonId)) {
+                showToast('🔒 Bu ders kilitlidir. Açık olan son derse yönlendirildiniz.', 'warning');
+                lessonId = 1;
+            }
+
+            currentLessonId = lessonId;
+            localStorage.setItem('zakirun_last_lesson_id', lessonId);
+
+            // Select dropdown güncelle
+            const select = document.getElementById('lesson-select');
+            if (select) select.value = lessonId;
+
+            // Aşama butonunu güncelle
+            const summary = curriculum.find(d => d.id === lessonId);
+            if (summary) {
+                for (let s = 1; s <= 2; s++) {
+                    const btn = document.getElementById(`stage-btn-${s}`);
+                    if (btn) {
+                        if (s === summary.stage) {
+                            btn.className = 'stage-pill active justify-center py-3';
+                        } else {
+                            btn.className = `stage-pill justify-center py-3 ${s === 2 && !isStageUnlocked(2) ? 'is-locked' : ''}`;
+                        }
+                    }
+                }
+            }
+
+            try {
+                const res = await fetch(`/api/learn/lesson/${lessonId}`);
+                const data = await res.json();
+                currentLessonData = data.lesson;
+                presentLesson();
+                populateLessonSelect();
+            } catch (e) {
+                console.error('Ders detayı çekilirken hata:', e);
+            }
+        }
+
+        function presentLesson() {
+            if (!currentLessonData) return;
+
+            document.getElementById('lesson-stage-label').innerText = currentLessonData.stage_title || 'ELİFBÂ';
+            document.getElementById('lesson-chapter-label').innerText = currentLessonData.subtitle || currentLessonData.title;
+            document.getElementById('lesson-title').innerText = currentLessonData.title;
+            document.getElementById('lesson-intro').innerText = currentLessonData.intro || '';
+
+            // Başlık sesi butonu kontrolü
+            const titleSoundBtn = document.getElementById('lesson-title-sound-container');
+            if (currentLessonData.title_sound) {
+                titleSoundBtn.style.display = 'block';
+            } else {
+                titleSoundBtn.style.display = 'none';
+            }
+
+            renderGroups();
+            renderQuiz();
+            updateCellProgress();
+
+            // Önceki buton durumu
+            const btnPrev = document.getElementById('btn-prev-lesson');
+            if (btnPrev) {
+                btnPrev.disabled = (currentLessonId <= 1);
+                btnPrev.style.opacity = (currentLessonId <= 1) ? '0.4' : '1';
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderGroups() {
+            const container = (document.getElementById('lesson-groups-container') || document.getElementById('cards-grid'));
+            container.innerHTML = '';
+
+            const groups = currentLessonData.groups || [];
+            const listenedSet = getListenedTiles(currentLessonId);
+
+            if (groups.length === 0 && (!currentLessonData.items || currentLessonData.items.length === 0)) {
+                container.innerHTML = `
+                    <div class="p-8 rounded-3xl bg-studio-900/40 border border-white/5 text-center text-gray-400 text-sm">
+                        Bu ders için etkileşimli kart bulunmamaktadır. Açıklama metnini okuyunuz.
+                    </div>
+                `;
+                return;
+            }
+
+            groups.forEach((g, gIdx) => {
+                const groupCard = document.createElement('div');
+                groupCard.className = 'p-6 rounded-3xl bg-studio-900/60 border border-white/10 space-y-4 backdrop-blur-md shadow-lg';
+
+                // Grup Başlığı & Ritmik Oynatıcı
+                let titleHtml = '';
+                if (g.title || g.pre_note) {
+                    titleHtml = `
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
+                            <div class="space-y-1">
+                                ${g.title ? `<h4 class="text-base font-bold text-amber-300 flex items-center gap-2"><span>❖</span><span>${escapeHtml(g.title)}</span></h4>` : ''}
+                                ${g.pre_note ? `<p class="text-xs text-gray-300 leading-relaxed">${escapeHtml(g.pre_note)}</p>` : ''}
+                            </div>
+                            <div class="flex items-center gap-2">
+                                ${g.pre_note_sound ? `
+                                    <button onclick="playAudioUrl('${g.pre_note_sound}')" class="px-3 py-1.5 rounded-xl bg-studio-950 border border-white/10 text-xs text-gray-300 hover:text-white flex items-center gap-1.5 transition">
+                                        <span>🔊</span>
+                                        <span>Açıklamayı Dinle</span>
+                                    </button>
+                                ` : ''}
+                                ${g.title_sound ? `
+                                    <button onclick="playAudioUrl('${g.title_sound}')" class="px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-xs text-amber-300 hover:bg-amber-500/25 flex items-center gap-1.5 transition">
+                                        <span>🔊</span>
+                                        <span>Başlığı Dinle</span>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Satırlar & Kutucuklar
+                let rowsHtml = '';
+                if (g.rows && g.rows.length > 0) {
+                    rowsHtml = '<div class="space-y-3">';
+                    g.rows.forEach((r, rIdx) => {
+                        const isGray = r.is_gray ? 'is-gray' : '';
+                        const rowId = `g_${gIdx}_r_${rIdx}`;
+
+                        let ritmikBtn = '';
+                        if (r.ritmik_sound) {
+                            ritmikBtn = `
+                                <button onclick="onRitmikClick('${r.ritmik_sound}', '${rowId}', ${gIdx}, ${rIdx})" class="px-3 py-1 rounded-lg bg-studio-950 hover:bg-amber-500/20 border border-white/10 hover:border-amber-500/40 text-[11px] font-mono font-bold text-amber-300 flex items-center gap-1 transition">
+                                    <span>▶</span>
+                                    <span>Ritmik Dinle</span>
+                                </button>
+                            `;
+                        }
+
+                        const tilesHtml = (r.tiles || []).map((t, tIdx) => {
+                            const tileId = `tile_${gIdx}_${rIdx}_${tIdx}`;
+                            const isListened = listenedSet.has(tileId);
+
+                            if (t.is_header) {
+                                return `
+                                    <div class="tile-card flex-1 min-w-[50px] sm:min-w-[65px] bg-amber-500/10 border-amber-500/30 cursor-default py-2">
+                                        <div class="text-xs font-bold text-amber-300 text-center">${formatArabicText(t.arabic)}</div>
+                                    </div>
+                                `;
+                            }
+
+                            return `
+                                <div class="tile-card flex-1 min-w-[50px] sm:min-w-[65px] min-h-[76px] sm:min-h-[86px] ${isGray} ${isListened ? 'is-listened' : ''} group" id="${tileId}" onclick="onTileClick('${t.audio_url}', '${tileId}')">
+                                    ${isListened ? '<span class="listened-badge">✓</span>' : ''}
+                                    <div class="quran-font text-3xl sm:text-4xl text-amber-100 group-hover:scale-110 group-hover:text-amber-300 transition duration-150">
+                                        ${formatArabicText(t.arabic)}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+
+                        rowsHtml += `
+                            <div class="p-3.5 rounded-2xl bg-studio-950/50 border border-white/5 space-y-2.5" id="${rowId}">
+                                ${ritmikBtn ? `<div class="flex justify-start">${ritmikBtn}</div>` : ''}
+                                <div class="flex flex-row-reverse justify-center items-stretch gap-2 sm:gap-3 w-full">
+                                    ${tilesHtml}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    rowsHtml += '</div>';
+                }
+
+                // Ayet & Mushaf Görünümü
+                let ayetHtml = '';
+                if (g.ayet_verses && g.ayet_verses.length > 0) {
+                    ayetHtml = '<div class="space-y-3 pt-2">';
+                    g.ayet_verses.forEach((av, avIdx) => {
+                        const wordsHtml = (av.words || []).map((w, wIdx) => {
+                            const wId = `w_${gIdx}_${avIdx}_${wIdx}`;
+                            const isListened = listenedSet.has(wId);
+                            return `
+                                <span class="tile-card inline-flex px-3.5 py-1.5 cursor-pointer hover:border-amber-500 ${isListened ? 'is-listened' : ''}" id="${wId}" onclick="onTileClick('${w.audio_url}', '${wId}')">
+                                    ${isListened ? '<span class="listened-badge">✓</span>' : ''}
+                                    <span class="quran-font text-2xl text-amber-200 hover:text-amber-400">${formatArabicText(w.text)}</span>
+                                </span>
+                            `;
+                        }).join('');
+
+                        ayetHtml += `
+                            <div class="p-4 rounded-2xl bg-studio-950/70 border border-white/10 flex flex-col md:flex-row items-center justify-between gap-3">
+                                <div class="flex-1 w-full">
+                                    <div class="flex flex-row-reverse flex-wrap items-center justify-start gap-2 w-full">
+                                        ${wordsHtml}
+                                        <span class="inline-block px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 font-mono text-xs font-bold mr-1">(${av.number})</span>
+                                    </div>
+                                </div>
+                                ${av.audio_url ? `
+                                    <button onclick="playAudioUrl('${av.audio_url}')" class="px-3.5 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center gap-1.5 flex-shrink-0 transition">
+                                        <span>🔊</span>
+                                        <span>Ayet Dinle</span>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        `;
+                    });
+                    ayetHtml += '</div>';
+                }
+
+                groupCard.innerHTML = titleHtml + rowsHtml + ayetHtml;
+                container.appendChild(groupCard);
+            });
+        }
+
+        // TİLE TIKLAMA & DİNLEME TAKİBİ
+        function onTileClick(audioUrl, tileId) {
+            const tileEl = document.getElementById(tileId);
+            if (tileEl) {
+                tileEl.classList.add('playing');
+                tileEl.classList.add('is-listened');
+                if (!tileEl.querySelector('.listened-badge')) {
+                    const badge = document.createElement('span');
+                    badge.className = 'listened-badge';
+                    badge.innerText = '✓';
+                    tileEl.appendChild(badge);
+                }
+                setTimeout(() => tileEl.classList.remove('playing'), 500);
+            }
+
+            playAudioUrl(audioUrl);
+            playTone(600, 'triangle', 0.08, 0.15);
+            markTileAsListened(tileId);
+        }
+
+        function onRitmikClick(ritmikSound, rowId, gIdx, rIdx) {
+            playAudioUrl(ritmikSound, rowId);
+            // Satırdaki tüm harfleri dinlenmiş kabul et
+            const group = currentLessonData && currentLessonData.groups ? currentLessonData.groups[gIdx] : null;
+            if (group && group.rows && group.rows[rIdx] && group.rows[rIdx].tiles) {
+                group.rows[rIdx].tiles.forEach((t, tIdx) => {
+                    const tileId = `tile_${gIdx}_${rIdx}_${tIdx}`;
+                    markTileAsListened(tileId);
+                    const tileEl = document.getElementById(tileId);
+                    if (tileEl) {
+                        tileEl.classList.add('is-listened');
+                        if (!tileEl.querySelector('.listened-badge')) {
+                            const badge = document.createElement('span');
+                            badge.className = 'listened-badge';
+                            badge.innerText = '✓';
+                            tileEl.appendChild(badge);
+                        }
+                    }
+                });
+            }
+        }
+
+        function playAudioUrl(url, rowHighlightId = null) {
+            if (!url) return;
+            const player = document.getElementById('diyanetAudioPlayer');
+            player.pause();
+            player.currentTime = 0;
+            player.src = url;
+            player.play().catch(err => {
+                console.warn('Audio play error:', err);
+            });
+
+            if (rowHighlightId) {
+                const rowEl = document.getElementById(rowHighlightId);
+                if (rowEl) {
+                    rowEl.classList.add('border-amber-500/50', 'bg-amber-500/5');
+                    setTimeout(() => {
+                        rowEl.classList.remove('border-amber-500/50', 'bg-amber-500/5');
+                    }, 3000);
+                }
+            }
+        }
+
+        function playLessonTitleSound() {
+            if (currentLessonData && currentLessonData.title_sound) {
+                playAudioUrl(currentLessonData.title_sound);
+            }
+        }
+
+        // TEST MOTORU
+        function renderQuiz() {
+            const quizList = currentLessonData.quiz || [];
+            const quizSec = document.getElementById('quiz-section');
+            const feedbackBox = document.getElementById('quiz-feedback-box');
+            feedbackBox.className = 'hidden';
+
+            if (quizList.length === 0) {
+                quizSec.classList.add('hidden');
+                return;
+            }
+            quizSec.classList.remove('hidden');
+
+            currentQuizIndex = 0;
+            presentQuizQuestion();
+        }
+
+        function presentQuizQuestion() {
+            const quizList = currentLessonData.quiz || [];
+            if (currentQuizIndex >= quizList.length) currentQuizIndex = 0;
+            const q = quizList[currentQuizIndex];
+
+            document.getElementById('quiz-prompt').innerText = q.prompt || 'Dinlediğiniz sesi doğru harf/kelime ile eşleştiriniz.';
+
+            const optContainer = document.getElementById('quiz-options-container');
+            optContainer.innerHTML = (q.options || []).map((opt, idx) => `
+                <button onclick="answerQuiz('${escapeQuotes(opt)}', '${escapeQuotes(q.correct)}')" class="tile-card p-4 hover:border-amber-500 transition">
+                    <span class="quran-font text-3xl sm:text-4xl text-amber-200">${formatArabicText(opt)}</span>
+                </button>
+            `).join('');
+        }
+
+        function playCurrentQuizAudio() {
+            const quizList = currentLessonData.quiz || [];
+            const q = quizList[currentQuizIndex];
+            if (q && q.audio_url) {
+                playAudioUrl(q.audio_url);
+            }
+        }
+
+        function answerQuiz(selected, correct) {
+            const feedbackBox = document.getElementById('quiz-feedback-box');
+            feedbackBox.classList.remove('hidden');
+
+            if (selected === correct) {
+                playTone(523.25, 'triangle', 0.1, 0.2);
+                setTimeout(() => playTone(659.25, 'triangle', 0.15, 0.2), 90);
+                setTimeout(() => playTone(783.99, 'triangle', 0.2, 0.2), 180);
+
+                if (typeof confetti === 'function') confetti({ particleCount: 35, spread: 60, origin: { y: 0.8 } });
+
+                const total = countPlayableTiles(currentLessonData);
+                const listenedCount = getListenedTiles(currentLessonId).size;
+                const canComplete = (listenedCount >= total && total > 0) || completedLessons.includes(currentLessonId);
+
+                feedbackBox.className = 'p-5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs space-y-3';
+                feedbackBox.innerHTML = `
+                    <div class="font-black text-sm flex items-center gap-2">
+                        <span class="text-base">✓</span>
+                        <span>TEBRİKLER! DOĞRU CEVAP</span>
+                    </div>
+                    <div class="text-gray-200">Testi başarıyla çözdünüz.</div>
+                    <div class="pt-2 flex items-center gap-3">
+                        ${canComplete ? `
+                            <button onclick="completeCurrentLesson()" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs transition shadow-lg flex items-center gap-2">
+                                <span>Dersi Tamamla & Sonraki Dersi Aç (+10 Puan)</span>
+                                <span>➔</span>
+                            </button>
+                        ` : `
+                            <button onclick="completeCurrentLesson()" class="px-5 py-2.5 rounded-xl bg-amber-500/30 text-amber-300 font-bold text-xs border border-amber-500/40 cursor-not-allowed flex items-center gap-2">
+                                <span>🔒 Tüm Hücreleri Dinleyiniz (${listenedCount} / ${total})</span>
+                            </button>
+                        `}
+                    </div>
+                `;
+            } else {
+                playTone(200, 'sawtooth', 0.2, 0.15);
+                feedbackBox.className = 'p-4 rounded-2xl bg-crimson-500/15 border border-crimson-500/30 text-red-300 text-xs space-y-2';
+                feedbackBox.innerHTML = `
+                    <div class="font-bold flex items-center gap-2">
+                        <span>✗</span>
+                        <span>Yanlış seçim yaptınız. Sesi tekrar dinleyip yeniden deneyiniz.</span>
+                    </div>
+                `;
+            }
+        }
+
+        async function completeCurrentLesson() {
+            const total = countPlayableTiles(currentLessonData);
+            const listenedSet = getListenedTiles(currentLessonId);
+            
+            // ZORUNLULUK DENETİMİ: Tüm hücreler dinlenmiş olmalıdır!
+            if (!completedLessons.includes(currentLessonId) && listenedSet.size < total) {
+                const remaining = total - listenedSet.size;
+                playTone(220, 'sawtooth', 0.25, 0.2);
+                showToast(`🔒 Bu dersteki tüm hücreler dinlenmeden sonraki derse geçilemez! (Kalan: ${remaining} hücre)`, 'warning');
+                highlightUnlistenedTiles();
+                return;
+            }
+
+            if (!completedLessons.includes(currentLessonId)) {
+                completedLessons.push(currentLessonId);
+                localStorage.setItem('zakirun_completed_lessons', JSON.stringify(completedLessons));
+            }
+            updateUserProgressBadge();
+            populateLessonSelect();
+            updateStageButtons();
+            updateCellProgress();
+
+            try {
+                fetch('/api/learn/complete-lesson', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lesson_id: currentLessonId, score: 10 })
+                });
+            } catch (e) {}
+
+            if (currentLessonId === 35) {
+                showToast('🌟 TEBRİKLER! 1. Aşama (Elifbâ) tamamlandı! 2. Aşama (Tecvid Kuralları) kilidi açıldı!', 'success');
+            } else {
+                showToast(`🎉 Tebrikler! ${currentLessonId}. Ders tamamlandı. Sıradaki dersin kilidi açıldı!`, 'success');
+            }
+
+            setTimeout(() => {
+                nextLesson();
+            }, 600);
+        }
+
+        function prevLesson() {
+            if (currentLessonId > 1) {
+                loadLesson(currentLessonId - 1);
+            }
+        }
+
+        function nextLesson() {
+            if (currentLessonId >= curriculum.length) return;
+
+            // Kural: Hücrelerin tamamı dinlenmeden sonraki derse ASLA geçilmeyecek!
+            const total = countPlayableTiles(currentLessonData);
+            const listenedSet = getListenedTiles(currentLessonId);
+            const isCompleted = completedLessons.includes(currentLessonId);
+
+            if (!isCompleted && listenedSet.size < total) {
+                const remaining = total - listenedSet.size;
+                playTone(220, 'sawtooth', 0.25, 0.2);
+                showToast(`🔒 Bu dersteki tüm hücreler dinlenmeden sonraki derse geçilemez! (Kalan: ${remaining} hücre)`, 'warning');
+                highlightUnlistenedTiles();
+                return;
+            }
+
+            const nextId = currentLessonId + 1;
+            loadLesson(nextId);
+        }
+
+        function formatArabicText(raw) {
+            if (!raw) return '';
+            // Diyanet tecvid işaretlerini ({harf}) kırmızı renkle vurgula, ayraçları tamamen kaldır:
+            return raw
+                .replace(/\[\[sub-red:([^\]]+)\]\]/g, '<span class="text-red-400 font-bold text-[0.78em] align-sub">$1</span>')
+                .replace(/\[\[sub:([^\]]+)\]\]/g, '<span class="text-amber-400 text-[0.78em] align-sub">$1</span>')
+                .replace(/\{([^}]+)\}/g, '<span class="text-red-400 font-bold">$1</span>');
+        }
+
+        function cleanArabic(raw) {
+            if (!raw) return '';
+            return raw.replace(/\[\[sub-(?:red:)?([^\]]+)\]\]/g, '$1').replace(/[{}]/g, '');
+        }
+
+        function escapeQuotes(str) {
+            if (!str) return '';
+            return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function checkPortalAuth() {
+            try {
+                const uRaw = localStorage.getItem('zakirun_user');
+                if (uRaw) {
+                    const u = JSON.parse(uRaw);
+                    const txtEl = document.getElementById('portal-auth-btn-text');
+                    if (txtEl) txtEl.innerText = u.name ? u.name.split(' ')[0] : 'Profil';
+                }
+            } catch(e) {}
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initPortal();
+            checkPortalAuth();
+        });
+    </script>
+</body>
+</html>
